@@ -56,13 +56,27 @@ void initialiseEncoderStateMachine()
        If initially A is 1 and B is 1, system starts in State 3
        If initially A is 0 and B is 1, system starts in State 4 */
 
-    if (channelAState)
+    if (channelAState == 0)
     {
-        if(channelBState)
+        if(channelBState == 0)
+        {
+            state = state1;
+        }
+        else if (channelBState == 1)
+        {
+            state = state4;
+        }
+    }
+    else if (channelAState == 1)
+    {
+        if(channelBState == 0)
+        {
+            state = state2;
+        }
+        else if (channelBState == 1)
         {
             state = state3;
-        }
-        /* else ....  lots of code goes here */
+        }  
     }
 }
 
@@ -76,12 +90,144 @@ void updateEncoderStateMachine()
            If A is 0 and B is 1, subtract 1 to main counter and go to State 4
            If A is 1 and B is 1, do nothing to main counter but add 1 to error counter and go to state 3 */
 
-        if (channelAState && !channelBState)
+        if (channelAState == 1)
         {
+            if (channelBState == 1)
+            {
+            error++;
+            state = state3;
+            break;
+            }
+            else if (channelBState == 0)
+            {
             count++;
             state = state2;
+            break;
+            }
+        } 
+        else if (channelAState == 0)
+        {
+            if (channelBState == 1)
+            {
+            count--;
+            state = state4;
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            break;
+            }
         }
-        /* else ....  lots of code goes here */
-        break; /* don't forget break at the end of each case! */
+        break; 
+case state2:
+        /* If A is 0 and B is 0, subtract 1 to main counter and go to State 4
+           If A is 1 and B is 0, do nothing and stay in State 2
+           If A is 0 and B is 1, do nothing to main counter but add 1 to error counter and go to state 4
+           If A is 1 and B is 1, add 1 to main counter and go to State 3 */
+
+        if (channelAState == 1)
+        {
+            if (channelBState == 1)
+            {
+            count++;
+            state = state3;
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            break;
+            }
+        } 
+        else if (channelAState == 0)
+        {
+            if (channelBState == 1)
+            {
+            error++;
+            state = state4;
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            count--;
+            state = state4;
+            break;
+            }
+        }
+        break; 
+
+case state3:
+        /* If A is 0 and B is 0, do nothing to main counter but add 1 to error counter and go to state 1
+           If A is 1 and B is 0, subtract 1 to main counter and go to State 2
+           If A is 0 and B is 1, add 1 to main counter and go to State 4
+           If A is 1 and B is 1, do nothing and stay in State 3 */
+
+        if (channelAState == 1)
+        {
+            if (channelBState == 1)
+            {
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            count--;
+            state = state2;
+            break;
+            }
+        } 
+        else if (channelAState == 0)
+        {
+            if (channelBState == 1)
+            {
+            count++;
+            state = state4;
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            error++;
+            state = state1;
+            break;
+            }
+        }
+        break; 
+
+case state4:
+        /* If A is 0 and B is 0, add 1 to main counter and go to State 1
+           If A is 1 and B is 0, do nothing to main counter but add 1 to error counter and go to state 2
+           If A is 0 and B is 1, do nothing and stay in State 4
+           If A is 1 and B is 1, subtract 1 to main counter and go to State 3 */
+
+         if (channelAState == 1)
+        {
+            if (channelBState == 1)
+            {
+            count--;
+            state = state3;
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            error++;
+            state = state2;
+            break;
+            }
+        } 
+        else if (channelAState == 0)
+        {
+            if (channelBState == 1)
+            {
+            break;
+            }
+            else if (channelBState == 0)
+            {
+            count++;
+            state = state1;
+            break;
+            }
+        }
+        break; 
+
+
+
     }
 }

@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 1/TwoSensorsSkeleton",
-      "program": "c:/Users/Tom/VSCode/Programs/Lab 1/TwoSensorsSkeleton/build/Debug/outDebug",
+      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 1/TestEncoder",
+      "program": "c:/Users/Tom/VSCode/Programs/Lab 1/TestEncoder/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
