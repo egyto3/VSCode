@@ -121,7 +121,7 @@ Call it from the main() function below */
 float KelvinToCelcius(float Temp_K)
 {
     float Temp_C = 0;
-    Temp_C = Temp_K - 273;
+    Temp_C = Temp_K - 273.15;
     return (Temp_C);
 }
 
@@ -152,8 +152,8 @@ int main()
         double Temperature_Kelvin = 0;
         double Resistance_Logarithm = 0;
         Resistance_Logarithm = log(ThermisterResistance / R0);
-        Temperature_Kelvin = pow(((1/T0)+((1/B)*Resistance_Logarithm))), -1);
-        // Temperature_Kelvin = pow(((1/T0)+((1/B)*(log(ThermisterResistance / R0)))), -1);
+        Temperature_Kelvin = pow(((1/T0)+((1/B)*Resistance_Logarithm)), -1);
+        
 
         // Convert temperature from Kelvin to Celcius
         double Temperature_Celcius = 0;
@@ -162,7 +162,10 @@ int main()
     // Calculate thermocouple temperature in degrees C ( Part c, i - iv)
 
     // Output results
-    printf("V_ADC = %f ThermisterResistance = %f \n", V_ADC, ThermisterResistance);
+    
+            // Test outputs
+                // printf("V_ADC = %f ThermisterResistance = %f Temperature_Kelvin = %f \n", V_ADC, ThermisterResistance, Temperature_Kelvin);
+    
     printf("Thermistor temperature (deg C): %f \n", Temperature_Celcius);
     //printf("Thermocouple temperature with CJC (deg C): %f \n", ******);
 
