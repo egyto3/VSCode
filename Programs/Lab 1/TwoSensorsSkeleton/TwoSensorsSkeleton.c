@@ -161,13 +161,33 @@ int main()
 
     // Calculate thermocouple temperature in degrees C ( Part c, i - iv)
 
+        // Convert ADC value to voltage
+        V_ADC = ADCToVoltage(V_ref, n_ADC);
+
+        // Convert voltage to thermocouple voltage
+        float ThermocoupleVoltage = 0;
+        ThermocoupleVoltage = (V_ADC - 0.35) / 54.4;
+
+        // Calculate compensation EMF (in millivolts)
+        double EMF_Comp = 0;
+        EMF_Comp = NISTdegCtoMilliVoltsKtype(Temperature_Celcius);
+
+        // Calculate temeperature of thermocouple
+        double ThermocoupleTemperature = 0;
+        double EMF_Total = 0;
+        EMF_Total = (double)ThermocoupleVoltage * 1000 + (EMF_Comp);
+        ThermocoupleTemperature = NISTmilliVoltsToDegCKtype(EMF_Total);
+
+
+
     // Output results
     
             // Test outputs
                 // printf("V_ADC = %f ThermisterResistance = %f Temperature_Kelvin = %f \n", V_ADC, ThermisterResistance, Temperature_Kelvin);
     
+    printf("Test value: %f \n", n_ADC);
     printf("Thermistor temperature (deg C): %f \n", Temperature_Celcius);
-    //printf("Thermocouple temperature with CJC (deg C): %f \n", ******);
+    printf("Thermocouple temperature with CJC (deg C): %f \n", ThermocoupleTemperature);
 
     return 0;
 }
