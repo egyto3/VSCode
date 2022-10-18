@@ -37,6 +37,9 @@ void loop()
         double Thermocouple_ADC = 0;
         Thermocouple_ADC = analogRead(ThermistorPin);
 
+         //Thermistor_ADC = 256;
+         //Thermocouple_ADC = 256;
+
 
     // Calculate thermistor temperature in degrees C ( Part b, i,ii,iii & v)
 
@@ -86,6 +89,7 @@ void loop()
 
   /* Display results.  Don't use printf or formatting etc., they don't work on the Arduino. Just use 
      the serial print statements given here, inserting your own code as needed */
+
   Serial.print("Thermistor temperature (deg C): ");
   Serial.println(Temperature_Celcius);  // Replace ... with your code, it won't compile until you do.
   Serial.print(" Thermocouple temperature with CJC (deg C): ");

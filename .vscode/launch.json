@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 1/TwoSensorsSkeleton",
-      "program": "c:/Users/Tom/VSCode/Programs/Lab 1/TwoSensorsSkeleton/build/Debug/outDebug",
+      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 1/TwoSensorsSkeleton/ino file",
+      "program": "c:/Users/Tom/VSCode/Programs/Lab 1/TwoSensorsSkeleton/ino file/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
