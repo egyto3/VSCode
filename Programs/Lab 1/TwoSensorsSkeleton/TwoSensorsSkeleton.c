@@ -106,10 +106,10 @@ float NISTmilliVoltsToDegCKtype(float tcEMFmV)
 /* Write a function here to convert ADC value to voltages. (Part a, equation 1)
 Call it from the main() function below */
 
-float ADCToVoltage(float V_ref, float n_ADC)
+double ADCToVoltage(double V_ref, double n_ADC)
 {       
 
-        float V_ADC = 0;
+        double V_ADC = 0;
         V_ADC =  V_ref * n_ADC / 1024;
         return V_ADC;
 
@@ -118,9 +118,9 @@ float ADCToVoltage(float V_ref, float n_ADC)
 /* Write a function to convert degrees K to degrees C  (Part b, (iv))
 Call it from the main() function below */
 
-float KelvinToCelcius(float Temp_K)
+double KelvinToCelcius(double Temp_K)
 {
-    float Temp_C = 0;
+    double Temp_C = 0;
     Temp_C = Temp_K - 273.15;
     return (Temp_C);
 }
@@ -128,7 +128,7 @@ float KelvinToCelcius(float Temp_K)
 int main()
 {
     // Define VRef
-    float V_ref = 5;
+    double V_ref = 5;
 
     // Define Thermistor constants
     double T0 = 298.15;
@@ -136,23 +136,38 @@ int main()
     double B = 3975;
 
     // User input for one pin value to test all outputs
-    float n_ADC = 256;
+        double n_ADC = 0;
+        printf("Enter a value between 0 and 1023 to simulate the value read from the ADC: \n");
+        scanf("%lf", &n_ADC);
+        printf("Test value: %f \n", n_ADC);
 
     // Calculate thermistor temperature in degrees C ( Part b, i,ii,iii & v)
 
         // Call function to convert ADC value to voltage
-        float V_ADC = 0;
+        double V_ADC = 0;
         V_ADC = ADCToVoltage(V_ref, n_ADC);
 
         // Convert voltage to resistance (in ohms)
         double ThermisterResistance = 0;
-        ThermisterResistance = (((10 * 3.3) / (double)V_ADC) - 10) * 1000;
+        ThermisterResistance = (((10 * 3.3) / V_ADC) - 10) * 1000;
 
         // Convert resistance into temperature (in K)
         double Temperature_Kelvin = 0;
         double Resistance_Logarithm = 0;
+        double Temperature_Expression = 0;
+
+        // If statement to notify user of error
+        if (ThermisterResistance < 0)
+        {
+            printf("Temperature cant be calculated as you can't take the logarithm of a negative number \n");
+        }
+        
         Resistance_Logarithm = log(ThermisterResistance / R0);
-        Temperature_Kelvin = pow(((1/T0)+((1/B)*Resistance_Logarithm)), -1);
+        Temperature_Expression = (1 / T0) + (Resistance_Logarithm / B);
+        Temperature_Kelvin = pow(Temperature_Expression, -1);
+
+            
+        
         
 
         // Convert temperature from Kelvin to Celcius
@@ -165,7 +180,7 @@ int main()
         V_ADC = ADCToVoltage(V_ref, n_ADC);
 
         // Convert voltage to thermocouple voltage
-        float ThermocoupleVoltage = 0;
+        double ThermocoupleVoltage = 0;
         ThermocoupleVoltage = (V_ADC - 0.35) / 54.4;
 
         // Calculate compensation EMF (in millivolts)
@@ -175,7 +190,7 @@ int main()
         // Calculate temeperature of thermocouple
         double ThermocoupleTemperature = 0;
         double EMF_Total = 0;
-        EMF_Total = (double)ThermocoupleVoltage * 1000 + (EMF_Comp);
+        EMF_Total = ThermocoupleVoltage * 1000 + (EMF_Comp);
         ThermocoupleTemperature = NISTmilliVoltsToDegCKtype(EMF_Total);
 
 
@@ -183,9 +198,8 @@ int main()
     // Output results
     
             // Test outputs
-                // printf("V_ADC = %f ThermisterResistance = %f Temperature_Kelvin = %f \n", V_ADC, ThermisterResistance, Temperature_Kelvin);
+                 //printf("V_ADC = %f ThermisterResistance = %f Temperature_Kelvin = %f Temperature_Expression = %lf \n", V_ADC, ThermisterResistance, Temperature_Kelvin, Temperature_Expression);
     
-    printf("Test value: %f \n", n_ADC);
     printf("Thermistor temperature (deg C): %f \n", Temperature_Celcius);
     printf("Thermocouple temperature with CJC (deg C): %f \n", ThermocoupleTemperature);
 
