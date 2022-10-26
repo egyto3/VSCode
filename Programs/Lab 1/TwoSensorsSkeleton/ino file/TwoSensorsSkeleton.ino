@@ -33,7 +33,7 @@ void loop()
 
     // User input for one pin value to test all outputs
         double Thermistor_ADC = 0;
-        Thermistor_ADC = analogRead((TCpin);
+        Thermistor_ADC = analogRead(TCpin);
         double Thermocouple_ADC = 0;
         Thermocouple_ADC = analogRead(ThermistorPin);
 
