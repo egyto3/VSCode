@@ -2,6 +2,7 @@
 
 #include <avr/io.h>  /* Needed to set up counter on pin 47 */
 #include <SPI.h>     /* Needed to communicate with LS7366R (Counter Click) */
+#include <PID_v1.h>  /* Needed to define PID class */
 
 /* Serial input aspects are based closely upon: 
    http://forum.arduino.cc/index.php?topic=396450
@@ -16,24 +17,26 @@
   https://forum.arduino.cc/index.php?topic=59396.0 written by bubuldino */
 
 /* Pins used for L298 driver */
-#define enA 13      /* PWM output, also visible as LED */
-#define in1 8       /* H bridge selection input 1 */
-#define in2 9       /* H bridge selection input 2 */
-#define minPercent -100.0
-#define maxPercent 100.0
+const int enA = 13;      /* PWM output, also visible as LED */
+const int in1 = 8;       /* H bridge selection input 1 */
+const int in2 = 9;       /* H bridge selection input 2 */
+const float minPercent = -100.0;
+const float maxPercent = 100.0;
 
-/* Encoder input pins (used for state machine and interrupts) */
-#define channelA 2
-#define channelB 3
+/* Encoder input pins (used for state machine and interrupts)
+   Not really needed but may be used just to provide pullup resistors */
+const int channelA = 2;
+const int channelB = 3;
 
 /* Used to to initiate SPI communication to LS7366R chip (Counter click) */
-#define chipSelectPin 10
+const int chipSelectPin = 10;
 
 /* Size of buffer used to store received characters */
-#define numChars 32
+enum {numChars = 32};
 
 /* Intervals in milliseconds for user-defined timed loops */
-#define printInterval 1000           
+const int printInterval = 1000;
+const int controlInterval = 20;       
 
 /* Global variables used in serial input */ 
 char receivedChars[numChars];   // an array to store the received data
@@ -41,22 +44,20 @@ float dataNumber = 0;             // new for this version
 boolean newData = false;
 
 /* Global variables used for motor control and encoder reading */
-double percentSpeed;
-double encoderValue;
-
-/* Used for state machine and encoder reading */
-typedef enum states{state1=1, state2, state3, state4};
-volatile long int count = 0;
-volatile long int error = 0;
-volatile states state;
-bool channelAState, channelBState;
-
-/* Used for handling overflows in Timer 5 */
-volatile long int bigLaps;
+double percentDutyCycle;
+double measuredPosnFromEncoder;
+double positionSetPoint;
 
 /* Global variables used for loop timing */
 unsigned long prevMillisPrint = 0;        /* stores last time values were printed */
-unsigned long prevMillisControl = 0;      /* stores last time control action was updated */
+
+/* Define PID constants */
+const double ProportionalGain = 0.02;  //kp
+const double IntegralConst = 0;        //ki
+const double DerivativeConst = 0;      //kd
+
+//Define the global PID object
+PID myPID(&measuredPosnFromEncoder, &percentDutyCycle, &positionSetPoint, ProportionalGain, IntegralConst, DerivativeConst, DIRECT);
 
 /* Overlapping regions of memory used to convert four bytes to a long integer */
 union fourBytesToLong
@@ -70,14 +71,14 @@ void setup()
   Serial.begin(9600);
   Serial.println("Enter PWM duty cycle as a percentage (positive for forward, negative for reverse");
 
-  /* Set encoder pins as input but with pullup resistors to be compatible with various encoders */
+  // Innitialise setpoint
+  positionSetPoint = 0;
+
+  /* Set encoder pins as input but with pullup resistors to be compatible with various encoders 
+     Note: not strictly needed if state machine input is not being used, but retained in case we need
+     easy access to pull-up resistors for encoders that do not include them */
   pinMode(channelA, INPUT_PULLUP);
   pinMode(channelB, INPUT_PULLUP);
-
-  channelAState = digitalRead(channelA);
-  channelBState = digitalRead(channelB);
-
-  initialiseEncoderStateMachine();  /* Find initial state based on inputs */
   
   /* Set up and initialise pin used for selecting LS7366R counter: hi=inactive */
   pinMode(chipSelectPin, OUTPUT);   
@@ -87,17 +88,6 @@ void setup()
 
   delay(100);
 
-  /* Configure Timer 5 to count pulses on pin 47 */
-  pinMode(47, INPUT_PULLUP);           // set pin to input with pullup resistor
-  
-  TCCR5A = 0; // No waveform generation needed. 
-  TCCR5B = (1<<CS50) | (1<<CS51) | (1<<CS52); // Normal mode, clock from pin T5 on rising edge. T5 is Arduinos Pin 47
-  TCCR5C = 0; // No force output compare. 
-  TCNT5 = 0;  // Initialise counter register to zero.
-  TIMSK5= (1<<TOIE5);  // Enable overflow interrupt
-  sei();      // Enable all interrupts
-  bigLaps = 0; // Initialise number of overflows
-  
   /* Configure control pins for L298 H bridge */
   pinMode(enA, OUTPUT);
   pinMode(in1, OUTPUT);
@@ -107,61 +97,82 @@ void setup()
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
 
-  //attachInterrupt(digitalPinToInterrupt(channelA), updateEncoderStateMachine, CHANGE);
-  //attachInterrupt(digitalPinToInterrupt(channelB), updateEncoderStateMachine, CHANGE); 
+  /*  */
+  myPID.SetOutputLimits(minPercent, maxPercent);
+  myPID.SetSampleTime(controlInterval);
+  myPID.SetMode(AUTOMATIC);
+
 }
 
 void loop() 
 {
   unsigned long currentMillis = millis();
+  
+  // Add call to control loop function here
+   if (currentMillis - prevMillisPrint >= 20) 
+  {
+    ControlLoop();
+  }
 
-  if (currentMillis - prevMillisPrint >= printInterval) {
-    // save the last time you printed output
+
+  if (currentMillis - prevMillisPrint >= printInterval) 
+  {
+    // Save the current time for comparison the next time the loop is called
     prevMillisPrint = currentMillis;
     printLoop();
   }
   
-  recvWithEndMarker();
-  if(convertNewNumber())
-  // Update value read from serial line
+  /* Don't change these two lines, they decide when there is a new value just read from the
+   *  serial input and allow you to take action based on this new value  */
+  recvWithEndMarker();  /*  Update value read from serial line  */
+  if(convertNewNumber())  // If a valid number has been read set the percent duty cycle to this value
   {
-     percentSpeed=dataNumber;
-     driveMotorPercent(percentSpeed);
+   positionSetPoint = dataNumber;
   }
-
-  updateEncoderStateMachine();
 }
 
-void driveMotorPercent(double percentSpeed)
+void driveMotorPercent(double percentDutyCycle)
 /* Output PWM and H bridge signals based on positive or negative duty cycle % */
 {
-      percentSpeed = constrain(percentSpeed, -100, 100);
-      int regVal = map(percentSpeed, -100, 100, -255, 255);
+	  // constrain the duty cycle to a value between -100 and 100 then map to +-255
+      percentDutyCycle = constrain(percentDutyCycle, -100, 100);
+      int regVal = map(percentDutyCycle, -100, 100, -255, 255);
       analogWrite(enA, (int)abs(regVal));
       digitalWrite(in1, regVal>0);
       digitalWrite(in2, !(regVal>0));
 }
 
-void printLoop()
+// control loop function
+void ControlLoop()
+{
+  measuredPosnFromEncoder = readEncoderCountFromLS7366R();
+  myPID.Compute();
+  driveMotorPercent(percentDutyCycle);
+  /* measuredPosnFromEncoder = readEncoderCountFromLS7366R();
+   percentDutyCycle = ProportionalGain * (positionSetPoint - measuredPosnFromEncoder);
+   driveMotorPercent(percentDutyCycle);*/
+}
+
 /* Print count and control information */
+void printLoop()
 {
    /* Sample all counters one after the other to avoid delay-related offsets */
-   long encoderCountFromLS7366R = readEncoderCountFromLS7366R();
-   long encoderCountFromStateMC = count;
-   long stateMCerror = error;
-   long timer5Count = TCNT5 + bigLaps*65536;
+   measuredPosnFromEncoder = readEncoderCountFromLS7366R();
    Serial.print("Count from LS7366R = ");
-   Serial.print(encoderCountFromLS7366R);
-   Serial.print(" from state m/c = ");
-   Serial.print(encoderCountFromStateMC);
-   Serial.print(" State m/c errors = ");
-   Serial.print(stateMCerror);
-   Serial.print(" Count from LS7366R/4 = ");
-   Serial.print(encoderCountFromLS7366R/4);
-   Serial.print(" from Timer 5 = ");
-   Serial.print(timer5Count);
-   Serial.print(" Percent speed = ");
-   Serial.print(percentSpeed);
+   Serial.print(measuredPosnFromEncoder);
+   Serial.print("\r\n");
+
+   Serial.print("Setpoint = ");
+   Serial.print(positionSetPoint);
+   Serial.print("\r\n");
+
+   ControlLoop();
+   Serial.print("Error = ");
+   Serial.print(percentDutyCycle);
+   Serial.print("\r\n");
+
+   Serial.print("Measured position = ");
+   Serial.print(measuredPosnFromEncoder);
    Serial.print("\r\n");
 }
  
@@ -184,9 +195,8 @@ long readEncoderCountFromLS7366R()
     return converter.result;
 }
 
-
 void SetUpLS7366RCounter(void)
-/* Initialiseds LS7366R hardware counter on Counter Click board to read quadrature signals */
+/* Initialises LS7366R hardware counter on Counter Click board to read quadrature signals */
 {
     /* Control registers in LS7366R - see LS7366R datasheet for this and subsequent control words */
     unsigned char IR = 0x00, MRD0=0x00;
@@ -215,7 +225,6 @@ void SetUpLS7366RCounter(void)
    IR |= 0x20; /* Select CNTR: B5=1,B4=0,B3=0; CLR register: B7=0,B6=0 */
    SPI.transfer(IR); /* Write to instruction register */ 
    digitalWrite(chipSelectPin,HIGH); 
-   
 }
 
 void recvWithEndMarker() 
@@ -249,8 +258,8 @@ bool convertNewNumber()
        data to convert, otherwise returns false */
 {
     if (newData) {
-        dataNumber = 0.0;             // new for this version
-        dataNumber = atof(receivedChars);   // new for this version
+        dataNumber = 0.0;             
+        dataNumber = atof(receivedChars);   
         newData = false;
         return true;
     }
@@ -259,42 +268,3 @@ bool convertNewNumber()
        return false;
     }
 }
-
-void initialiseEncoderStateMachine()
-/* User written code to initialise state of state machine code based on input states */
-{
-  if (channelAState)
-  {
-      if(channelBState)
-      {
-        state = state3;
-      }
-      /* else.... a lot of code goes here! */
-  }
-}
-
-void updateEncoderStateMachine()
-/* User written code to update state and increment count of state machine  */
-{
-  channelAState = digitalRead(channelA);
-  channelBState = digitalRead(channelB);
-  
-  switch (state)
-  {
-     case state1:
-     if (channelAState && !channelBState)
-     {
-        count++;
-        state = state2;
-     }
-     /* else if .... a lot of code goes here! */
-     /* don't forget "break" at end of each case. */
-  }
-}
-
-ISR(TIMER5_OVF_vect )
-{
-  //when this runs, you had 65536 pulses counted.
-  bigLaps++; 
-}
-

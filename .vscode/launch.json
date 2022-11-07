@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 1/TestEncoder/ino file",
-      "program": "c:/Users/Tom/VSCode/Programs/Lab 1/TestEncoder/ino file/build/Debug/outDebug",
+      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 2/PIDClosedLoopTO",
+      "program": "c:/Users/Tom/VSCode/Programs/Lab 2/PIDClosedLoopTO/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

@@ -197,8 +197,6 @@ int main()
 
     // Output results
     
-            // Test outputs
-                 //printf("V_ADC = %f ThermisterResistance = %f Temperature_Kelvin = %f Temperature_Expression = %lf \n", V_ADC, ThermisterResistance, Temperature_Kelvin, Temperature_Expression);
     
     printf("Thermistor temperature (deg C): %f \n", Temperature_Celcius);
     printf("Thermocouple temperature with CJC (deg C): %f \n", ThermocoupleTemperature);

@@ -37,8 +37,9 @@ void loop()
         double Thermocouple_ADC = 0;
         Thermocouple_ADC = analogRead(ThermistorPin);
 
-         //Thermistor_ADC = 256;
-         //Thermocouple_ADC = 256;
+        //Test values
+        //Thermistor_ADC = 256;
+        //Thermocouple_ADC = 256;
 
 
     // Calculate thermistor temperature in degrees C ( Part b, i,ii,iii & v)
@@ -91,9 +92,9 @@ void loop()
      the serial print statements given here, inserting your own code as needed */
 
   Serial.print("Thermistor temperature (deg C): ");
-  Serial.println(Temperature_Celcius);  // Replace ... with your code, it won't compile until you do.
+  Serial.println(Temperature_Celcius);  
   Serial.print(" Thermocouple temperature with CJC (deg C): ");
-  Serial.println(ThermocoupleTemperature);  // Replace ... with your code, it won't compile until you do.
+  Serial.println(ThermocoupleTemperature);  
   Serial.println("\n");
   delay(1000);
 }
