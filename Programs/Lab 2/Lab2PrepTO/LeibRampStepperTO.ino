@@ -109,6 +109,30 @@ void loop()
 	  /* Start of pre-computation code											*/
       /* Add Leib Ramp formulae here */
       
+		// STEP 1																 
+        // Define number of steps in acceleration phase using Equation (3)       
+        accelSteps = (pow(maxPermissSpeed,2) - pow(minSpeed,2))/(2*maxAccel);
+		
+        stepsToGo = computeStepsToGo();
+        maxSpeed = maxPermissSpeed;
+        if (2 * accelSteps > stepsToGo)
+        {
+			// STEP 2 
+			// Define maximum speed in profile 
+        maxSpeed = sqrt(pow(minSpeed,2)+(maxAccel*stepsToGo));
+      // Define number of steps in acceleration phase 
+        accelSteps = (long)(stepsToGo/2);
+      
+        }
+
+		// STEPS 3 and 5														  
+        // Calculate initial value of and p1 and R    Set p = p1                  
+        p = p1;
+        p1 = ticksPerSec/sqrt(pow(minSpeed,2)+(2*maxAccel));
+
+        R = maxAccel/pow(ticksPerSec,2);
+
+        ps = ((float)ticksPerSec) / maxSpeed; //  STEP 4: leave it as it is.
 	  
 	  /* End of pre-computation code                                            */
       /* ---------------------------------------------------------------------- */
@@ -150,12 +174,14 @@ void moveOneStep()
     digitalWrite(stepPin, HIGH);
     if (direction == FWDS)
     {
-      /* Is something missing here? */
+      /* Run motor forwards */
+      digitalWrite(dirPin, HIGH);
       currentPosition++;
     }
     else
     {
-      /* Is something missing here? */
+      /* Run motor backwards */
+      digitalWrite(dirPin, LOW);
       currentPosition--;
     }
     delayMicroseconds(stepLengthMus);
@@ -167,17 +193,49 @@ void computeNewSpeed()
 /* Calcuate new value of step interval p based on constants defined in loop() */
 {
   /* You may need to declare some temporary variables for this function... */
+  float m = 0;
+  float q = 0;
   stepsToGo = computeStepsToGo();
   
+
   /* ----------------------------------------------------------------- */
   /* Start of on-the-fly step calculation code, executed once per step */
-  /* Add Leib Ramp code here										   */
-
-
-
+  
+  //  STEP 6a														  
+  if (stepsToGo == 0)
+  {
+    p = 0; // Not actually a zero step interval, used to switch stepping off
+    return;
+  }
+  else if (stepsToGo >= accelSteps && (long)p > (long)ps) // Changed to make ramps even length
+  /* Speeding up */
+  {
+    /* Equation (9) */
+    m=-R;
+  }
+  else if (stepsToGo <= accelSteps)
+  /* Slowing down */
+  {
+    /* Equation 10 */
+    m=R;
+  }
+  else
+  /* Running at constant speed */
+  {
+    /* Equation (11)	*/
+    m=0;   
+  }
+  
+  // STEP 6b, c and d using Equations (12) and (13)  
+  q = m*p*p;
+  p = p*(1+q+1.5*q*q);
+  
+  if (p > p1)
+  {
+    p = p1;
+  }
   /* End of on-the-fly step calculation code */
   /* ----------------------------------------------------------------- */
-  
 }
 
 long computeStepsToGo()

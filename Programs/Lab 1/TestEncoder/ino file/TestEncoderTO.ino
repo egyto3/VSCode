@@ -82,24 +82,24 @@ void initialiseEncoderStateMachine()
        If initially A is 1 and B is 1, system starts in State 3
        If initially A is 0 and B is 1, system starts in State 4 */
 
-    if (channelAState == 0)
+    if (!channelAState)
     {
-        if(channelBState == 0)
+        if(!channelBState)
         {
             state = state1;
         }
-        else if (channelBState == 1)
+        else 
         {
             state = state4;
         }
     }
-    else if (channelAState == 1)
+    else 
     {
-        if(channelBState == 0)
+        if(!channelBState)
         {
             state = state2;
         }
-        else if (channelBState == 1)
+        else
         {
             state = state3;
         }  

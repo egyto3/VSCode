@@ -2,7 +2,6 @@
 
 #include <avr/io.h>  /* Needed to set up counter on pin 47 */
 #include <SPI.h>     /* Needed to communicate with LS7366R (Counter Click) */
-#include <PID_v1.h>  /* Needed to define PID class */
 
 /* Serial input aspects are based closely upon: 
    http://forum.arduino.cc/index.php?topic=396450
@@ -35,8 +34,7 @@ const int chipSelectPin = 10;
 enum {numChars = 32};
 
 /* Intervals in milliseconds for user-defined timed loops */
-const int printInterval = 1000;
-const int controlInterval = 20;       
+const int printInterval = 1000;           
 
 /* Global variables used in serial input */ 
 char receivedChars[numChars];   // an array to store the received data
@@ -50,14 +48,11 @@ double positionSetPoint;
 
 /* Global variables used for loop timing */
 unsigned long prevMillisPrint = 0;        /* stores last time values were printed */
+const int controlInterval = 20;    
 
-/* Define PID constants */
-const double ProportionalGain = 0.02;  //kp
-const double IntegralConst = 0;        //ki
-const double DerivativeConst = 0;      //kd
+/* Proportional gain constant*/
+const double ProportionalGain = 0.02;
 
-//Define the global PID object
-PID myPID(&measuredPosnFromEncoder, &percentDutyCycle, &positionSetPoint, ProportionalGain, IntegralConst, DerivativeConst, DIRECT);
 
 /* Overlapping regions of memory used to convert four bytes to a long integer */
 union fourBytesToLong
@@ -70,9 +65,6 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("Enter PWM duty cycle as a percentage (positive for forward, negative for reverse");
-
-  // Innitialise setpoint
-  positionSetPoint = 0;
 
   /* Set encoder pins as input but with pullup resistors to be compatible with various encoders 
      Note: not strictly needed if state machine input is not being used, but retained in case we need
@@ -96,12 +88,6 @@ void setup()
   /* Set initial rotation direction */
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-
-  /* Initialise PID */
-  myPID.SetOutputLimits(minPercent, maxPercent);
-  myPID.SetSampleTime(controlInterval);
-  myPID.SetMode(AUTOMATIC);
-
 }
 
 void loop() 
@@ -109,7 +95,7 @@ void loop()
   unsigned long currentMillis = millis();
   
   // Add call to control loop function here
-   if (currentMillis - prevMillisPrint >= 20) 
+   if (currentMillis - prevMillisPrint >= controlInterval) 
   {
     ControlLoop();
   }
@@ -145,12 +131,9 @@ void driveMotorPercent(double percentDutyCycle)
 // control loop function
 void ControlLoop()
 {
-  measuredPosnFromEncoder = readEncoderCountFromLS7366R();
-  myPID.Compute();
-  driveMotorPercent(percentDutyCycle);
-  /* measuredPosnFromEncoder = readEncoderCountFromLS7366R();
+   measuredPosnFromEncoder = readEncoderCountFromLS7366R();
    percentDutyCycle = ProportionalGain * (positionSetPoint - measuredPosnFromEncoder);
-   driveMotorPercent(percentDutyCycle);*/
+   driveMotorPercent(percentDutyCycle);
 }
 
 /* Print count and control information */
