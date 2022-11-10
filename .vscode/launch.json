@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Tom/VSCode/Programs/Lab 1/MotorEncoderSkeleton",
-      "program": "c:/Users/Tom/VSCode/Programs/Lab 1/MotorEncoderSkeleton/build/Debug/outDebug",
+      "cwd": "c:/Users/Tom/VSCode/Programs/Project/Tests/shapenames",
+      "program": "c:/Users/Tom/VSCode/Programs/Project/Tests/shapenames/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

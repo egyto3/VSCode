@@ -3,5 +3,5 @@
     "board": "arduino:avr:mega",
     "programmer": "arduino:avrisp",
     "port": "COM3",
-    "sketch": "Programs\\Lab 1\\TestEncoder\\ino file\\TestEncoderTO.ino"
+    "sketch": "Programs\\Project\\SerialEchoBlink\\SerialEchoBlink.ino"
 }
