@@ -1,18 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct PenStrokeData
-{
-  int xPosition;
-  int yPosition;
-  int PenStatus;
-};
 
 struct ShapeData
 {
   char ShapeName[30];
   int NumberLinesOfShape;
-  struct PenStrokeData;
+
+  struct PenStrokeData
+  {
+    int xPosition;
+    int yPosition;
+    int PenStatus;
+  } Shape1Data[20];
+
 };
 
 int main()
@@ -34,16 +35,18 @@ int main()
   for (i = 0; i < Numshapes; i++)
   {
     // Read first line. Get shape name and the number of lines required to read
-    struct ShapeData Shape1;
-    fscanf(fptr, "%s %d", Shape1.ShapeName, &Shape1.NumberLinesOfShape);
-    printf("%s %d\n", Shape1.ShapeName, Shape1.NumberLinesOfShape);
 
-    struct PenStrokeData Shape1Data[Shape1.NumberLinesOfShape];
+    struct ShapeData Shape[Numshapes];
+    fscanf(fptr, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
+    printf("%s %d\n", Shape[i].ShapeName, Shape[i].NumberLinesOfShape);
+
+    //struct PenStrokeData Shape1Data[Shape[i].NumberLinesOfShape];
+
     int j;
-    for (j = 0; j < Shape1.NumberLinesOfShape; j++)
+    for (j = 0; j < Shape[i].NumberLinesOfShape; j++)
     {
-      fscanf(fptr, "%d %d %d", &Shape1Data[j].xPosition, &Shape1Data[j].yPosition, &Shape1Data[j].PenStatus);
-      printf("%d %d %d\n", Shape1Data[j].xPosition, Shape1Data[j].yPosition, Shape1Data[j].PenStatus);
+      fscanf(fptr, "%d %d %d", &Shape[i].Shape1Data[j].xPosition, &Shape[i].Shape1Data[j].yPosition, &Shape[i].Shape1Data[j].PenStatus);
+      printf("%d %d %d\n", Shape[i].Shape1Data[j].xPosition, Shape[i].Shape1Data[j].yPosition, Shape[i].Shape1Data[j].PenStatus);
     }
   }
 

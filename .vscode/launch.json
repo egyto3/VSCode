@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Tom/VSCode/Programs/Project/Tests/shapenames",
-      "program": "c:/Users/Tom/VSCode/Programs/Project/Tests/shapenames/build/Debug/outDebug",
+      "cwd": "c:/Users/Tom/VSCode/Programs/Project/Tests",
+      "program": "c:/Users/Tom/VSCode/Programs/Project/Tests/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
