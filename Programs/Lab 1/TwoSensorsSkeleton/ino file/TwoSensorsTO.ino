@@ -102,11 +102,11 @@ void loop()
 /* Write a function to convert ADC value to 
    voltage: put it here and use it in your code above*/
 
-double ADCToVoltage(double V_ref, double n_ADC)
+double ADCToVoltage(double V_ref, double Thermocouple_ADC)
 {       
 
         double V_ADC = 0;
-        V_ADC =  V_ref * n_ADC / 1024;
+        V_ADC =  V_ref * Thermocouple_ADC / 1024;
         return V_ADC;
 
 }
