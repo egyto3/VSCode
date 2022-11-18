@@ -4,9 +4,11 @@
 #include <windows.h>
 #include "rs232.h"
 #include "serial.h"
+#include "string.h"
 
 #define bdrate 115200 /* 115200 baud */
 #define ScalingAmount 20 / 16
+#define GridSpacing 30
 
 void SendCommands(char *buffer);
 int ReadShapes();
@@ -25,7 +27,7 @@ struct ShapeData
         float xPosition;
         float yPosition;
         float PenStatus;
-    } *ShapePositonData; 
+    } * ShapePositonData;
 };
 
 struct Grid
@@ -37,7 +39,7 @@ struct Grid
         int Grid_x;
         int Grid_y;
         char *GridShapeName;
-    } *ShapestoDraw; 
+    } * ShapestoDraw;
 };
 
 int main()
@@ -48,7 +50,9 @@ int main()
     struct ShapeData *Shape;
     ReadShapes(&Shape);
     ReadInstructions(&DrawGrid);
-    
+    printf("%s\n",DrawGrid.ShapestoDraw[0].GridShapeName);
+    printf("%d\n", Shape[0].NumberLinesOfShape);
+    //printf("%s %d\n", Shape[0].ShapeName, Shape[0].NumberLinesOfShape);
 
 
     // If we cannot open the port then give up immediatly
@@ -81,7 +85,7 @@ int main()
     SendCommands(buffer);
 
     // New commands
-    ConverttoGCode(buffer,&DrawGrid);
+    ConverttoGCode(buffer, &DrawGrid, &Shape);
 
     // Before we exit the program we need to close the COM port
     CloseRS232Port();
@@ -115,22 +119,20 @@ int ReadShapes(struct ShapeData *Shape)
     int Numshapes;
     fscanf(fptr, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
     printf("%d\n", Numshapes);
-    //struct ShapeData Shape[Numshapes];
-    
-    Shape = malloc(sizeof(*Shape)*Numshapes);   // Acts as array of size Numshapes
+    // struct ShapeData Shape[Numshapes];
+
+    Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
 
     int i;
     for (i = 0; i < Numshapes; i++)
     {
         // Read first line. Get shape name and the number of lines required to read
 
-        Shape[i].ShapeName = malloc(sizeof(*Shape->ShapeName));     // Acts as array of size ShapeName
+        Shape[i].ShapeName = malloc(sizeof(*Shape->ShapeName)); // Acts as array of size ShapeName
         fscanf(fptr, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
         printf("%s %d\n", Shape[i].ShapeName, Shape[i].NumberLinesOfShape);
 
-
-        Shape[i].ShapePositonData = malloc(sizeof(*Shape->ShapePositonData)*Shape[i].NumberLinesOfShape);   // ShapePositonData acts as array of size NumberLinesOfShape
-
+        Shape[i].ShapePositonData = malloc(sizeof(*Shape->ShapePositonData) * Shape[i].NumberLinesOfShape); // ShapePositonData acts as array of size NumberLinesOfShape
 
         int j;
         for (j = 0; j < Shape[i].NumberLinesOfShape; j++)
@@ -142,6 +144,7 @@ int ReadShapes(struct ShapeData *Shape)
     }
 
     fclose(fptr);
+    printf("%d\n", Shape[0].NumberLinesOfShape);
     return 0;
 }
 
@@ -187,13 +190,13 @@ int ReadInstructions(struct Grid *DrawGrid)
 
     fscanf(fptr, "%*s %d", &DrawGrid->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
 
-    DrawGrid->ShapestoDraw = malloc(sizeof(*DrawGrid->ShapestoDraw)*LineCount);     // Acts as array of size LineCount
-    
+    DrawGrid->ShapestoDraw = malloc(sizeof(*DrawGrid->ShapestoDraw) * LineCount); // Acts as array of size LineCount
+
     // Read and store data to draw line by line
     int i;
     for (i = 0; i < LineCount; i++)
     {
-        DrawGrid->ShapestoDraw[i].GridShapeName = malloc(sizeof(*DrawGrid->ShapestoDraw[i].GridShapeName));     // Acts as array of size GridShapeName
+        DrawGrid->ShapestoDraw[i].GridShapeName = malloc(sizeof(*DrawGrid->ShapestoDraw[i].GridShapeName)); // Acts as array of size GridShapeName
         fscanf(fptr, "%d %d %s", &DrawGrid->ShapestoDraw[i].Grid_x, &DrawGrid->ShapestoDraw[i].Grid_y, DrawGrid->ShapestoDraw[i].GridShapeName);
         printf("%d %d %s\n", DrawGrid->ShapestoDraw[i].Grid_x, DrawGrid->ShapestoDraw[i].Grid_y, DrawGrid->ShapestoDraw[i].GridShapeName);
     }
@@ -202,15 +205,31 @@ int ReadInstructions(struct Grid *DrawGrid)
     return 0;
 }
 
-int ConverttoGCode( char *buffer, struct Grid *DrawGrid)
+int ConverttoGCode(char *buffer, struct Grid *DrawGrid, struct ShapeData *Shape)
 {
-    //char buffer[100];
     if (DrawGrid->DrawGridValue == 1)
     {
         CreateGrid(buffer);
     }
 
+    //(DrawGrid->ShapestoDraw[0].Grid_x - 1)*GridSpacing + GridSpacing/2;  // Formula for distance to centre grid position. Eg for grid 2: distance = (2-1)*30 + 30/2 = 45
+    //-((DrawGrid->ShapestoDraw[0].Grid_y - 1)*GridSpacing + GridSpacing/2);  // Same as above but for y coordinate which is negative (Origin is top left)
+    float StartPos_x;
+    float StartPos_y;
+    char temp_command[20];
+    StartPos_x = DrawGrid->ShapestoDraw[0].Grid_x * GridSpacing;
+    StartPos_y = - (4 - DrawGrid->ShapestoDraw[0].Grid_y) * GridSpacing; // Origin is top left while 1,1 is bottom left
 
+    printf("%s\n%s",DrawGrid->ShapestoDraw[0].GridShapeName,Shape[0].ShapeName);
+    if (DrawGrid->ShapestoDraw[0].GridShapeName == Shape[1].ShapeName)
+    {
+        sprintf(temp_command,"G0 X%f Y%f",StartPos_x,StartPos_y);
+
+        sprintf(buffer, "S0\n");
+        SendCommands(buffer);
+        sprintf(buffer, temp_command);
+        SendCommands(buffer);
+    }
     return 0;
 }
 
