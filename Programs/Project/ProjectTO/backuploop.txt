@@ -1,0 +1,51 @@
+
+    fscanf(fptr, "%*s %d", &DrawGrid->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
+
+    DrawGrid->ShapestoDraw = malloc(sizeof(*DrawGrid->ShapestoDraw) * LineCount); // Acts as array of size LineCount
+
+
+int count = 0;
+while (!feof(fptr))
+{
+        DrawGrid->ShapestoDraw[count].GridShapeName = malloc(sizeof(*DrawGrid->ShapestoDraw[count].GridShapeName)); // Acts as array of size GridShapeName
+        fscanf(fptr, "%d %d %s", &DrawGrid->ShapestoDraw[count].ShapeGridPosition_x, &DrawGrid->ShapestoDraw[count].ShapeGridPosition_y, DrawGrid->ShapestoDraw[count].GridShapeName);
+        // printf("%d %d %s\n", DrawGrid->ShapestoDraw[count].ShapeGridPosition_x, DrawGrid->ShapestoDraw[count].ShapeGridPosition_y, DrawGrid->ShapestoDraw[count].GridShapeName);
+        count++;
+}
+    *NumInstructions = count;
+
+
+
+
+
+
+
+ // Get number of lines in file
+    char EndLineIdentifier;
+    int LineCount = 0;
+    while ((EndLineIdentifier = fgetc(fptr)) != EOF)
+    {
+        if (EndLineIdentifier == '\n')
+        {
+            LineCount++;
+            /*  Note that the true number of lines in file will be 1 more as there is no \n at end of file.
+                First line is determining whether to draw grid so useful lines are true linecount-1.
+                Therefore useful number of lines = LineCount */
+        }
+    }
+    rewind(fptr);
+
+    *NumInstructions = LineCount;
+
+    fscanf(fptr, "%*s %d", &DrawGrid->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
+
+    DrawGrid->ShapestoDraw = malloc(sizeof(*DrawGrid->ShapestoDraw) * LineCount); // Acts as array of size LineCount
+
+    // Read and store data to draw line by line
+    int i;
+    for (i = 0; i < LineCount; i++)
+    {
+        DrawGrid->ShapestoDraw[i].GridShapeName = malloc(sizeof(*DrawGrid->ShapestoDraw[i].GridShapeName)); // Acts as array of size GridShapeName
+        fscanf(fptr, "%d %d %s", &DrawGrid->ShapestoDraw[i].ShapeGridPosition_x, &DrawGrid->ShapestoDraw[i].ShapeGridPosition_y, DrawGrid->ShapestoDraw[i].GridShapeName);
+        // printf("%d %d %s\n", DrawGrid->ShapestoDraw[i].ShapeGridPosition_x, DrawGrid->ShapestoDraw[i].ShapeGridPosition_y, DrawGrid->ShapestoDraw[i].GridShapeName);
+    }
