@@ -37,7 +37,7 @@ struct InstructionData
 };
 
 void SendCommands(char *buffer);
-int ReadShapeInformation(struct ShapeData *Shape, int *Numshapes);
+int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, int *Numshapes);
 int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions);
 int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int *Numshapes, int *NumInstructions);
 int CreateGrid(char *buffer);
@@ -45,23 +45,39 @@ int CreateGrid(char *buffer);
 int main()
 {
     char buffer[100];
-    int Numshapes;
-    int NumInstructions;
+    int Numshapes = 0;
+    int NumInstructions = 0;
+
+    FILE *fptrShapeInstructions;
+    fptrShapeInstructions = fopen("ShapeStrokeData.txt", "r");
+
+    if (fptrShapeInstructions == NULL)
+    {
+        printf("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    fscanf(fptrShapeInstructions, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
+    
+   
+    struct ShapeData *Shape;
+    Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
+    //printf("%lld \n", sizeof(*Shape) * Numshapes);
 
     struct InstructionData Instructions;
-    struct ShapeData Shape[20];
+    
 
-    ReadShapeInformation(Shape, &Numshapes);
+
+    ReadShapeInformation(Shape, fptrShapeInstructions, &Numshapes);
     ReadInstructions(&Instructions, &NumInstructions);
-    // printf("%s\n", Instructions.ShapestoDraw[0].InstructionsShapeName);
-    // printf("%d\n", Shape[0].NumberLinesOfShape);
-    // printf("%s %d\n", Shape[2].ShapeName, Shape[2].NumberLinesOfShape);
+
+
 
     // If we cannot open the port then give up immediatly
     if (CanRS232PortBeOpened() == -1)
     {
         printf("\nUnable to open the COM port (specified in serial.h) ");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     // Time to wake up the robot
@@ -93,7 +109,11 @@ int main()
     CloseRS232Port();
     printf("Com port now closed\n");
 
-    return (1);
+    free(Shape->ShapePositionData);
+    free(Shape);
+    free(Instructions.ShapestoDraw);
+
+    return (EXIT_SUCCESS);
 }
 
 /* Send the data to the robot - note in 'PC' mode you need to hit space twice
@@ -107,22 +127,8 @@ void SendCommands(char *buffer)
     // getch(); // Omit this once basic testing with emulator has taken place
 }
 
-int ReadShapeInformation(struct ShapeData *Shape, int *Numshapes)
+int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, int *Numshapes)
 {
-    FILE *fptr;
-    fptr = fopen("ShapeStrokeData.txt", "r");
-
-    if (fptr == NULL)
-    {
-        printf("Error opening file");
-        exit(0);
-    }
-
-    fscanf(fptr, "%*s %d", Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
-    // printf("%d\n", Numshapes);
-
-    // Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
-
     int i;
     for (i = 0; i < *Numshapes; i++)
     {
@@ -131,7 +137,7 @@ int ReadShapeInformation(struct ShapeData *Shape, int *Numshapes)
         //Shape[i].ShapeName = malloc(sizeof(*Shape->ShapeName)); // Acts as array of size ShapeName
 
         //printf("%lld \n", sizeof(Shape->ShapeName));
-        fscanf(fptr, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
+        fscanf(fptrShapeInstructions, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
         // printf("%s %d\n", Shape[i].ShapeName, Shape[i].NumberLinesOfShape);
 
         Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
@@ -139,13 +145,13 @@ int ReadShapeInformation(struct ShapeData *Shape, int *Numshapes)
 
         /*if (Shape[i].ShapePositionData = NULL)
         {
-            exit(0);
+            exit(EXIT_FAILURE);
         }*/
 
         int j;
         for (j = 0; j < Shape[i].NumberLinesOfShape; j++)
         {
-            fscanf(fptr, "%f %f %d", &Shape[i].ShapePositionData[j].xPosition, &Shape[i].ShapePositionData[j].yPosition, &Shape[i].ShapePositionData[j].PenStatus);
+            fscanf(fptrShapeInstructions, "%f %f %d", &Shape[i].ShapePositionData[j].xPosition, &Shape[i].ShapePositionData[j].yPosition, &Shape[i].ShapePositionData[j].PenStatus);
 
             // Scale values
             Shape[i].ShapePositionData[j].xPosition = Shape[i].ShapePositionData[j].xPosition * ScalingAmount;
@@ -155,8 +161,8 @@ int ReadShapeInformation(struct ShapeData *Shape, int *Numshapes)
         }
     }
 
-    fclose(fptr);
-    return 1;
+    fclose(fptrShapeInstructions);
+    return (EXIT_SUCCESS);
 }
 
 int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
@@ -164,13 +170,15 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     char FileName[20];
 
     // Get text file name from user
-    printf("Please enter the file name with format:\n");
+    printf("Please enter the file name (Exclude '.txt'):\n");
     scanf("%s", FileName);
+    strcat(FileName,".txt");
+
     if (strlen(FileName)>20)
     {
         //printf("%s\n",FileName);
         printf("File name is too large\n");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     // Open text file
@@ -179,8 +187,9 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
 
     if (fptr == NULL)
     {
-        printf("Error opening file called: %s\n", FileName);
-        exit(0);
+        printf("Error opening file called: %s\n\n", FileName);
+        ReadInstructions(Instructions, NumInstructions);
+        //exit(EXIT_FAILURE);
     }
     else
     {
@@ -222,7 +231,7 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     }
 
     fclose(fptr);
-    return 1;
+    return (EXIT_SUCCESS);
 }
 
 int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int *Numshapes, int *NumInstructions)
@@ -232,10 +241,10 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         CreateGrid(buffer);
     }
 
-    float StartPos_x;
-    float StartPos_y;
-    float TempPos_x;
-    float TempPos_y;
+    float StartPos_x = 0;
+    float StartPos_y = 0;
+    float TempPos_x = 0;
+    float TempPos_y = 0;
 
     int i, j, k;
 
@@ -285,12 +294,13 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         }
     }
 
+    // Return to start
     sprintf(buffer, "S0\n");
     SendCommands(buffer);
     sprintf(buffer, "G0 X0 Y0\n");
     SendCommands(buffer);
 
-    return 1;
+    return (EXIT_SUCCESS);
 }
 
 int CreateGrid(char *buffer)
@@ -342,5 +352,5 @@ int CreateGrid(char *buffer)
     SendCommands(buffer);
     sprintf(buffer, "G0 X0 Y0\n");
     SendCommands(buffer);
-    return 1;
+    return (EXIT_SUCCESS);
 }
