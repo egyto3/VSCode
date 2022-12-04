@@ -67,7 +67,6 @@ int main()
         printf("Failed to allocate space for Shape\n");
         exit(EXIT_FAILURE);
     }
-    printf("%zu\n", sizeof(*Shape) * Numshapes);
 
     struct InstructionData Instructions;
 
@@ -240,9 +239,9 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
 
     int i, j, k;
 
-    for (i = 0; i < *NumInstructions; i++)
+    for (i = 0; i < *NumInstructions; i++) // Loop through instructions
     {
-        for (j = 0; j < *Numshapes; j++)
+        for (j = 0; j < *Numshapes; j++) // Loop through shapes
         {
             if (!strcmp(Instructions->ShapestoDraw[i].InstructionsShapeName, Shape[j].ShapeName)) // strcmp returns 0 if strings are equal
             {
@@ -255,12 +254,13 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
                 sprintf(buffer, "G0 X%f Y%f\n", StartPos_x, StartPos_y);
                 SendCommands(buffer);
 
-                for (k = 0; k < Shape[j].NumberLinesOfShape; k++)
+                for (k = 0; k < Shape[j].NumberLinesOfShape; k++) // Loop through lines of data in each shape (X,Y,PenStatus lines)
                 {
                     TempPos_x = StartPos_x + Shape[j].ShapePositionData[k].xPosition;
                     TempPos_y = StartPos_y + Shape[j].ShapePositionData[k].yPosition;
 
-                    if (k == 0 || (Shape[j].ShapePositionData[k].PenStatus != Shape[j].ShapePositionData[k - 1].PenStatus))
+                    // Checks if the penstatus changes. Change spindle speed to represent new value.
+                    if (k == 0 || (Shape[j].ShapePositionData[k].PenStatus != Shape[j].ShapePositionData[k - 1].PenStatus)) // 'k == 0 ||' statement to assign initial spindle speed
                     {
                         if (Shape[j].ShapePositionData[k].PenStatus == 0)
                         {
