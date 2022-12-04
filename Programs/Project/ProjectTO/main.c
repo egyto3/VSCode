@@ -22,7 +22,7 @@ struct ShapeData
         float xPosition;
         float yPosition;
         int PenStatus;
-    }  ShapePositionData[20];
+    } * ShapePositionData;
 };
 
 struct InstructionData
@@ -34,7 +34,7 @@ struct InstructionData
         int ShapeGridPosition_x;
         int ShapeGridPosition_y;
         char InstructionsShapeName[MaxShapeNameSize];
-    }  ShapestoDraw[20];
+    } * ShapestoDraw;
 };
 
 void SendCommands(char *buffer);
@@ -60,20 +60,14 @@ int main()
 
     fscanf(fptrShapeInstructions, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
 
-    //struct ShapeData *Shape;
-    //Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
-    struct ShapeData *Shape = malloc(sizeof(*Shape) * Numshapes);
-    /*if (Shape = NULL)
+    struct ShapeData *Shape;
+    Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
+    if (Shape == NULL)
     {
         printf("Failed to allocate space for Shape\n");
         exit(EXIT_FAILURE);
-    }*/
-    printf("%zu \n", sizeof(struct ShapeData) * Numshapes);
-    printf("%zu \n", sizeof(*Shape));
-    printf("%zu \n", sizeof(Shape->ShapePositionData));
-    printf("%zu \n", sizeof(float));
-    printf("%zu \n", sizeof(int));
-    printf("%zu \n", sizeof(char));
+    }
+    printf("%zu\n", sizeof(*Shape) * Numshapes);
 
     struct InstructionData Instructions;
 
@@ -116,9 +110,9 @@ int main()
     CloseRS232Port();
     printf("Com port now closed\n");
 
-    //free(Shape->ShapePositionData);
+    free(Shape->ShapePositionData);
     free(Shape);
-    //free(Instructions.ShapestoDraw);
+    free(Instructions.ShapestoDraw);
 
     return (EXIT_SUCCESS);
 }
@@ -140,29 +134,14 @@ int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, i
     for (i = 0; i < *Numshapes; i++)
     {
         // Read first line. Get shape name and the number of lines required to read
-
-        // Shape[i].ShapeName = malloc(sizeof(*Shape->ShapeName)); // Acts as array of size ShapeName
-
-        // printf("%lld \n", sizeof(Shape->ShapeName));
         fscanf(fptrShapeInstructions, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
-        // printf("%s %d\n", Shape[i].ShapeName, Shape[i].NumberLinesOfShape);
 
-
-/*
         Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
-        if (Shape[i].ShapePositionData = NULL)
+        if (Shape[i].ShapePositionData == NULL)
         {
             printf("Failed to allocate space for Shape[i].ShapePositionData\n");
             exit(EXIT_FAILURE);
         }
-        //printf("%llu \n", sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape);
-
-*/
-
-        /*if (Shape[i].ShapePositionData = NULL)
-        {
-            exit(EXIT_FAILURE);
-        }*/
 
         int j;
         for (j = 0; j < Shape[i].NumberLinesOfShape; j++)
@@ -172,8 +151,6 @@ int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, i
             // Scale values
             Shape[i].ShapePositionData[j].xPosition = Shape[i].ShapePositionData[j].xPosition * ScalingAmount;
             Shape[i].ShapePositionData[j].yPosition = Shape[i].ShapePositionData[j].yPosition * ScalingAmount;
-
-            // printf("%f %f %d\n", Shape[i].ShapePositionData[j].xPosition, Shape[i].ShapePositionData[j].yPosition, Shape[i].ShapePositionData[j].PenStatus);
         }
     }
 
@@ -192,7 +169,6 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
 
     if (strlen(FileName) > 20)
     {
-        // printf("%s\n",FileName);
         printf("File name is too large\n");
         exit(EXIT_FAILURE);
     }
@@ -205,11 +181,11 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     {
         printf("Error opening file called: %s\n\n", FileName);
         ReadInstructions(Instructions, NumInstructions);
-        // exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     else
     {
-        printf("Success opening file called: %s\n", FileName);
+        printf("Success! Opening file called: %s\n", FileName);
     }
 
     // Get number of lines in file
@@ -232,21 +208,18 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
 
     fscanf(fptr, "%*s %d", &Instructions->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
 
-    /*Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * LineCount); // Acts as array of size LineCount
-    if (Instructions->ShapestoDraw = NULL)
+    Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * LineCount); // Acts as array of size LineCount
+    if (Instructions->ShapestoDraw == NULL)
     {
         printf("Failed to allocate space for Instructions->ShapestoDraw\n");
         exit(EXIT_FAILURE);
-    }*/
-    // printf("%llu \n", sizeof(*Instructions->ShapestoDraw));
+    }
 
     // Read and store data to draw line by line
     int i;
     for (i = 0; i < *NumInstructions; i++)
     {
-        // Instructions->ShapestoDraw[i].InstructionsShapeName = malloc(sizeof(*Instructions->ShapestoDraw[i].InstructionsShapeName)); // Acts as array of size InstructionsShapeName
         fscanf(fptr, "%d %d %s", &Instructions->ShapestoDraw[i].ShapeGridPosition_x, &Instructions->ShapestoDraw[i].ShapeGridPosition_y, Instructions->ShapestoDraw[i].InstructionsShapeName);
-        // printf("%d %d %s\n", Instructions->ShapestoDraw[i].ShapeGridPosition_x, Instructions->ShapestoDraw[i].ShapeGridPosition_y, Instructions->ShapestoDraw[i].InstructionsShapeName);
     }
 
     fclose(fptr);
@@ -302,8 +275,8 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
 
                     sprintf(buffer, "G%d X%f Y%f\n", Shape[j].ShapePositionData[k].PenStatus, TempPos_x, TempPos_y);
                     SendCommands(buffer);
-                }
-                j = *Numshapes; // ends j for loop so it doesnt look through rest of shapes (has already found the shape)
+                }             
+                break;  // ends j for loop so it doesnt look through rest of shapes (has already found the shape)
             }
             else if (j == *Numshapes - 1) // Check if j is the last possible value
             {
@@ -334,19 +307,11 @@ int CreateGrid(char *buffer)
     SendCommands(buffer);
     sprintf(buffer, "G1 X0 Y0\n");
     SendCommands(buffer);
-    sprintf(buffer, "S0\n");
-    SendCommands(buffer);
-    sprintf(buffer, "G0 X30 Y0\n");
-    SendCommands(buffer);
-    sprintf(buffer, "S1000\n");
+    sprintf(buffer, "G1 X30 Y0\n");
     SendCommands(buffer);
     sprintf(buffer, "G1 X30 Y-90\n");
     SendCommands(buffer);
-    sprintf(buffer, "S0\n");
-    SendCommands(buffer);
-    sprintf(buffer, "G0 X60 Y-90\n");
-    SendCommands(buffer);
-    sprintf(buffer, "S1000\n");
+    sprintf(buffer, "G1 X60 Y-90\n");
     SendCommands(buffer);
     sprintf(buffer, "G1 X60 Y0\n");
     SendCommands(buffer);
@@ -358,11 +323,7 @@ int CreateGrid(char *buffer)
     SendCommands(buffer);
     sprintf(buffer, "G1 X0 Y-30\n");
     SendCommands(buffer);
-    sprintf(buffer, "S0\n");
-    SendCommands(buffer);
-    sprintf(buffer, "G0 X0 Y-60\n");
-    SendCommands(buffer);
-    sprintf(buffer, "S1000\n");
+    sprintf(buffer, "G1 X0 Y-60\n");
     SendCommands(buffer);
     sprintf(buffer, "G1 X90 Y-60\n");
     SendCommands(buffer);
