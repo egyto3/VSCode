@@ -22,7 +22,7 @@ struct ShapeData
         float xPosition;
         float yPosition;
         int PenStatus;
-    } * ShapePositionData;
+    }  ShapePositionData[20];
 };
 
 struct InstructionData
@@ -34,7 +34,7 @@ struct InstructionData
         int ShapeGridPosition_x;
         int ShapeGridPosition_y;
         char InstructionsShapeName[MaxShapeNameSize];
-    } * ShapestoDraw;
+    }  ShapestoDraw[20];
 };
 
 void SendCommands(char *buffer);
@@ -69,6 +69,11 @@ int main()
         exit(EXIT_FAILURE);
     }*/
     printf("%zu \n", sizeof(struct ShapeData) * Numshapes);
+    printf("%zu \n", sizeof(*Shape));
+    printf("%zu \n", sizeof(Shape->ShapePositionData));
+    printf("%zu \n", sizeof(float));
+    printf("%zu \n", sizeof(int));
+    printf("%zu \n", sizeof(char));
 
     struct InstructionData Instructions;
 
@@ -111,9 +116,9 @@ int main()
     CloseRS232Port();
     printf("Com port now closed\n");
 
-    free(Shape->ShapePositionData);
+    //free(Shape->ShapePositionData);
     free(Shape);
-    free(Instructions.ShapestoDraw);
+    //free(Instructions.ShapestoDraw);
 
     return (EXIT_SUCCESS);
 }
@@ -141,15 +146,18 @@ int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, i
         // printf("%lld \n", sizeof(Shape->ShapeName));
         fscanf(fptrShapeInstructions, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
         // printf("%s %d\n", Shape[i].ShapeName, Shape[i].NumberLinesOfShape);
-        //struct ShapeData *Shape = (struct ShapeData *)malloc(sizeof(struct ShapeData) * Numshapes);
 
+
+/*
         Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
         if (Shape[i].ShapePositionData = NULL)
         {
             printf("Failed to allocate space for Shape[i].ShapePositionData\n");
             exit(EXIT_FAILURE);
         }
-        // printf("%llu \n", sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape);
+        //printf("%llu \n", sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape);
+
+*/
 
         /*if (Shape[i].ShapePositionData = NULL)
         {
@@ -224,12 +232,12 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
 
     fscanf(fptr, "%*s %d", &Instructions->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
 
-    Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * LineCount); // Acts as array of size LineCount
+    /*Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * LineCount); // Acts as array of size LineCount
     if (Instructions->ShapestoDraw = NULL)
     {
         printf("Failed to allocate space for Instructions->ShapestoDraw\n");
         exit(EXIT_FAILURE);
-    }
+    }*/
     // printf("%llu \n", sizeof(*Instructions->ShapestoDraw));
 
     // Read and store data to draw line by line
