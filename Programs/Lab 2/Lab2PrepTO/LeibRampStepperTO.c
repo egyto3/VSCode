@@ -25,97 +25,97 @@ long millis(void);
 /* Note: we are using global variables ONLY to preserve compatibility with the Arduino program structure.
    They should not normally be used in C or C++ programs as they make for a poor software design. */
 /* Global variables relating to stepper motor position counting etc. */
-long stepsToGo;             /* Number of steps left to make in present movement */
-long targetPosition;        /* Intended destination of motor for given movement */
-volatile long currentPosition = 0;   /* Position in steps of motor relative to startup position */
-float maxSpeed;            /* Maximum speed in present movement (not nec. max permitted) */
-bool direction;             /* Direction of present movement: FWDS or BWDS */
+long stepsToGo;                    /* Number of steps left to make in present movement */
+long targetPosition;               /* Intended destination of motor for given movement */
+volatile long currentPosition = 0; /* Position in steps of motor relative to startup position */
+float maxSpeed;                    /* Maximum speed in present movement (not nec. max permitted) */
+bool direction;                    /* Direction of present movement: FWDS or BWDS */
 
 /* Global variables used in simplistic and Leib Ramp algorithms */
-volatile float p;   /* Step interval in clock ticks or microseconds */
-float p1, ps;       /* Minimum and maximum step periods */
-float deltaP;      /* You'll be able to get rid of this later */
-float R;           /* Multiplying constant used in Eiderman's algorithm */
+volatile float p; /* Step interval in clock ticks or microseconds */
+float p1, ps;     /* Minimum and maximum step periods */
+float deltaP;     /* You'll be able to get rid of this later */
+float R;          /* Multiplying constant used in Eiderman's algorithm */
 
 /* Global variable used for noting previous time of a step in timed loop and for calculating speed and accel */
-long prevStepTime=0;
+long prevStepTime = 0;
 long millisAtStart;
-float prevSpeed=0.0;
+float prevSpeed = 0.0;
 
 /* Define permissible parameters for motor */
 // For testing on PC only, not for use in Arduino program: try movements in order of 50-100 steps
-float accelSteps=20; /* leave this as a variable as we may over-write it */
+float accelSteps = 20; /* leave this as a variable as we may over-write it */
 const float minSpeed = 1.0;
 const float maxPermissSpeed = 20.0;
 const float maxAccel = 10.0;
 
 int main()
 {
-    unsigned long currentMillis = millis();
-    prevStepTime = 0;
-    long positionToMoveTo;
-    while(true)
+  unsigned long currentMillis = millis();
+  prevStepTime = 0;
+  long positionToMoveTo;
+  while (true)
+  {
+    printf("Enter position to move to in profile (or 999 to terminate)\n");
+    scanf("%ld", &positionToMoveTo);
+    if (positionToMoveTo == 999)
+      break;
+    printf("        Time (s),  Speed (steps/s), Accel (steps/s^2),  Posit'n (steps), Step time (ticks)\n");
+
+    goToPosition(positionToMoveTo);
+
+    /* --------------------------------------------------------------------- */
+    /* Start of pre-computation code - only executed once per profile        */
+
+    // STEP 1
+    // Define number of steps in acceleration phase using Equation (3)
+    accelSteps = ((maxPermissSpeed*maxPermissSpeed) - (minSpeed*minSpeed)) / (2 * maxAccel);
+
+    stepsToGo = computeStepsToGo();
+    maxSpeed = maxPermissSpeed;
+    if (2 * accelSteps > stepsToGo)
     {
-        printf("Enter position to move to in profile (or 999 to terminate)\n");
-        scanf("%ld", &positionToMoveTo);
-        if (positionToMoveTo==999) break;
-        printf("        Time (s),  Speed (steps/s), Accel (steps/s^2),  Posit'n (steps), Step time (ticks)\n");
-
-        goToPosition(positionToMoveTo);
-
-        /* --------------------------------------------------------------------- */
-        /* Start of pre-computation code - only executed once per profile        */
-		
-		// STEP 1																 
-        // Define number of steps in acceleration phase using Equation (3)       
-        accelSteps = (pow(maxPermissSpeed,2) - pow(minSpeed,2))/(2*maxAccel);
-		
-        stepsToGo = computeStepsToGo();
-        maxSpeed = maxPermissSpeed;
-        if (2 * accelSteps > stepsToGo)
-        {
-			// STEP 2 
-			// Define maximum speed in profile 
-        maxSpeed = sqrt(pow(minSpeed,2)+(maxAccel*stepsToGo));
-      // Define number of steps in acceleration phase 
-        accelSteps = (long)(stepsToGo/2);
-      
-        }
-
-		// STEPS 3 and 5														  
-        // Calculate initial value of and p1 and R    Set p = p1                  
-        p = p1;
-        p1 = ticksPerSec/sqrt(pow(minSpeed,2)+(2*maxAccel));
-
-        R = maxAccel/pow(ticksPerSec,2);
-
-        ps = ((float)ticksPerSec) / maxSpeed; //  STEP 4: leave it as it is.
-		
-        /* End of pre-computation code                                    */
-        /* -------------------------------------------------------------- */
-		
-		
-        millisAtStart = millis(); /* Needed only to tabulate speed vs. time */
-
-        /* Timed loop for stepping, and associated coding */
-        while(stepsToGo > 0)
-        {
-            currentMillis = millis();
-            if (currentMillis - prevStepTime >= p)
-            {
-               moveOneStep();
-               prevStepTime = currentMillis;
-               computeNewSpeed();
-            }
-        }
+      // STEP 2
+      // Define maximum speed in profile
+      maxSpeed = sqrt((minSpeed*minSpeed) + (maxAccel * stepsToGo));
+      // Define number of steps in acceleration phase
+      accelSteps = (long)(stepsToGo / 2);
     }
-    return 0;
+
+    // STEPS 3 and 5
+    // Calculate initial value of and p1 and R
+
+    p1 = ticksPerSec / sqrt((minSpeed*minSpeed) + (2 * maxAccel));
+    p = p1;
+
+    R = maxAccel / (ticksPerSec*ticksPerSec);
+
+    ps = ((float)ticksPerSec) / maxSpeed; //  STEP 4: leave it as it is.
+
+    /* End of pre-computation code                                    */
+    /* -------------------------------------------------------------- */
+
+    millisAtStart = millis(); /* Needed only to tabulate speed vs. time */
+
+    /* Timed loop for stepping, and associated coding */
+    while (stepsToGo > 0)
+    {
+      currentMillis = millis();
+      if (currentMillis - prevStepTime >= p)
+      {
+        moveOneStep();
+        prevStepTime = currentMillis;
+        computeNewSpeed();
+      }
+    }
+  }
+  return 0;
 }
 
 long millis(void)
 /* Only needed for compatibility with Arduino program because millis() is not a native Windows API function */
 {
-    return GetTickCount();
+  return GetTickCount();
 }
 
 void moveOneStep()
@@ -136,13 +136,12 @@ void moveOneStep()
     }
     /* Something also missing here but only because we are not using any real step output. Don't add it to PC program. */
     /* Instead of actually making step, print out parameters for current step */
-    float speed = (float)(ticksPerSec)/p;
-    float accel = (float)(ticksPerSec)*(speed-prevSpeed)/p;
-    printf("%16.3f, %16.3f,  %16.3f, %16ld, %16.3f\n", 0.001*(millis()-millisAtStart), speed, accel, currentPosition, p);
+    float speed = (float)(ticksPerSec) / p;
+    float accel = (float)(ticksPerSec) * (speed - prevSpeed) / p;
+    printf("%16.3f, %16.3f,  %16.3f, %16ld, %16.3f\n", 0.001 * (millis() - millisAtStart), speed, accel, currentPosition, p);
     prevSpeed = speed;
   }
 }
-
 
 void computeNewSpeed()
 /* Calcuate new value of step interval p based on constants defined in loop() */
@@ -151,12 +150,11 @@ void computeNewSpeed()
   float m = 0;
   float q = 0;
   stepsToGo = computeStepsToGo();
-  
 
   /* ----------------------------------------------------------------- */
   /* Start of on-the-fly step calculation code, executed once per step */
-  
-  //  STEP 6a														  
+
+  //  STEP 6a
   if (stepsToGo == 0)
   {
     p = 0; // Not actually a zero step interval, used to switch stepping off
@@ -166,29 +164,35 @@ void computeNewSpeed()
   /* Speeding up */
   {
     /* Equation (9) */
-    m=-R;
+    m = -R;
   }
   else if (stepsToGo <= accelSteps)
   /* Slowing down */
   {
     /* Equation 10 */
-    m=R;
+    m = R;
   }
   else
   /* Running at constant speed */
   {
     /* Equation (11)	*/
-    m=0;   
+    m = 0;
   }
-  
-  // STEP 6b, c and d using Equations (12) and (13)  
-  q = m*p*p;
-  p = p*(1+q+1.5*q*q);
-  
+
+  // STEP 6b, c and d using Equations (12) and (13)
+  q = m * p * p;
+  p = p * (1 + q + 1.5 * q * q);
+
   if (p > p1)
   {
     p = p1;
   }
+
+  if (p < ps)
+  {
+    p = ps;
+  }
+
   /* End of on-the-fly step calculation code */
   /* ----------------------------------------------------------------- */
 }
@@ -220,7 +224,7 @@ void goToPosition(long newPosition)
   }
 }
 
-//void printLoop()
+// void printLoop()
 ///* Print current position of stepper using timed loop */
 //{
 //  /* Sample all counters one after the other to avoid delay-related offsets */

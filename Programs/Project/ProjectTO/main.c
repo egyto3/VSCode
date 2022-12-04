@@ -9,6 +9,7 @@
 #define bdrate 115200 /* 115200 baud */
 #define ScalingAmount 20 / 16
 #define GridSpacing 30
+#define GridStartPositionOffset 5
 #define MaxShapeNameSize 30
 
 struct ShapeData
@@ -32,7 +33,7 @@ struct InstructionData
     {
         int ShapeGridPosition_x;
         int ShapeGridPosition_y;
-        char InstructionsShapeName[MaxShapeNameSize];   
+        char InstructionsShapeName[MaxShapeNameSize];
     } * ShapestoDraw;
 };
 
@@ -58,20 +59,21 @@ int main()
     }
 
     fscanf(fptrShapeInstructions, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
-    
-   
-    struct ShapeData *Shape;
-    Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
-    //printf("%lld \n", sizeof(*Shape) * Numshapes);
+
+    //struct ShapeData *Shape;
+    //Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
+    struct ShapeData *Shape = malloc(sizeof(*Shape) * Numshapes);
+    /*if (Shape = NULL)
+    {
+        printf("Failed to allocate space for Shape\n");
+        exit(EXIT_FAILURE);
+    }*/
+    printf("%zu \n", sizeof(struct ShapeData) * Numshapes);
 
     struct InstructionData Instructions;
-    
-
 
     ReadShapeInformation(Shape, fptrShapeInstructions, &Numshapes);
     ReadInstructions(&Instructions, &NumInstructions);
-
-
 
     // If we cannot open the port then give up immediatly
     if (CanRS232PortBeOpened() == -1)
@@ -134,14 +136,20 @@ int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, i
     {
         // Read first line. Get shape name and the number of lines required to read
 
-        //Shape[i].ShapeName = malloc(sizeof(*Shape->ShapeName)); // Acts as array of size ShapeName
+        // Shape[i].ShapeName = malloc(sizeof(*Shape->ShapeName)); // Acts as array of size ShapeName
 
-        //printf("%lld \n", sizeof(Shape->ShapeName));
+        // printf("%lld \n", sizeof(Shape->ShapeName));
         fscanf(fptrShapeInstructions, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
         // printf("%s %d\n", Shape[i].ShapeName, Shape[i].NumberLinesOfShape);
+        //struct ShapeData *Shape = (struct ShapeData *)malloc(sizeof(struct ShapeData) * Numshapes);
 
         Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
-        //printf("%llu \n", sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape);
+        if (Shape[i].ShapePositionData = NULL)
+        {
+            printf("Failed to allocate space for Shape[i].ShapePositionData\n");
+            exit(EXIT_FAILURE);
+        }
+        // printf("%llu \n", sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape);
 
         /*if (Shape[i].ShapePositionData = NULL)
         {
@@ -172,11 +180,11 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     // Get text file name from user
     printf("Please enter the file name (Exclude '.txt'):\n");
     scanf("%s", FileName);
-    strcat(FileName,".txt");
+    strcat(FileName, ".txt");
 
-    if (strlen(FileName)>20)
+    if (strlen(FileName) > 20)
     {
-        //printf("%s\n",FileName);
+        // printf("%s\n",FileName);
         printf("File name is too large\n");
         exit(EXIT_FAILURE);
     }
@@ -189,7 +197,7 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     {
         printf("Error opening file called: %s\n\n", FileName);
         ReadInstructions(Instructions, NumInstructions);
-        //exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
     else
     {
@@ -203,7 +211,7 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     {
         if (NewLineIdentifier == '\n')
         {
-            printf("%c",NewLineIdentifier);
+            printf("%c", NewLineIdentifier);
             LineCount++;
             /*  Note that the true number of lines in file will be 1 more as there is no \n at end of file.
                 First line is determining whether to draw grid so useful lines are true linecount-1.
@@ -216,16 +224,19 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
 
     fscanf(fptr, "%*s %d", &Instructions->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
 
-
     Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * LineCount); // Acts as array of size LineCount
-    //printf("%llu \n", sizeof(*Instructions->ShapestoDraw));
-
+    if (Instructions->ShapestoDraw = NULL)
+    {
+        printf("Failed to allocate space for Instructions->ShapestoDraw\n");
+        exit(EXIT_FAILURE);
+    }
+    // printf("%llu \n", sizeof(*Instructions->ShapestoDraw));
 
     // Read and store data to draw line by line
     int i;
     for (i = 0; i < *NumInstructions; i++)
     {
-        //Instructions->ShapestoDraw[i].InstructionsShapeName = malloc(sizeof(*Instructions->ShapestoDraw[i].InstructionsShapeName)); // Acts as array of size InstructionsShapeName
+        // Instructions->ShapestoDraw[i].InstructionsShapeName = malloc(sizeof(*Instructions->ShapestoDraw[i].InstructionsShapeName)); // Acts as array of size InstructionsShapeName
         fscanf(fptr, "%d %d %s", &Instructions->ShapestoDraw[i].ShapeGridPosition_x, &Instructions->ShapestoDraw[i].ShapeGridPosition_y, Instructions->ShapestoDraw[i].InstructionsShapeName);
         // printf("%d %d %s\n", Instructions->ShapestoDraw[i].ShapeGridPosition_x, Instructions->ShapestoDraw[i].ShapeGridPosition_y, Instructions->ShapestoDraw[i].InstructionsShapeName);
     }
@@ -255,8 +266,8 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
             if (!strcmp(Instructions->ShapestoDraw[i].InstructionsShapeName, Shape[j].ShapeName)) // strcmp returns 0 if strings are equal
             {
                 // Origin is top left while gridposition 1,1 is bottom left
-                StartPos_x = ((Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + 5;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
-                StartPos_y = (-(4 - Instructions->ShapestoDraw[i].ShapeGridPosition_y) * GridSpacing) + 5; // Formula for distance to grid position. Eg for grid 2: distance = -(4-2)*30 + 5 = -55
+                StartPos_x = ((Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + GridStartPositionOffset;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
+                StartPos_y = (-(4 - Instructions->ShapestoDraw[i].ShapeGridPosition_y) * GridSpacing) + GridStartPositionOffset; // Formula for distance to grid position. Eg for grid 2: distance = -(4-2)*30 + 5 = -55
 
                 sprintf(buffer, "S0\n");
                 SendCommands(buffer);
@@ -283,7 +294,6 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
 
                     sprintf(buffer, "G%d X%f Y%f\n", Shape[j].ShapePositionData[k].PenStatus, TempPos_x, TempPos_y);
                     SendCommands(buffer);
-
                 }
                 j = *Numshapes; // ends j for loop so it doesnt look through rest of shapes (has already found the shape)
             }
