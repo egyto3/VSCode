@@ -61,7 +61,7 @@ int main()
     fscanf(fptrShapeInstructions, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
 
     struct ShapeData *Shape;
-    Shape = malloc(sizeof(*Shape) * Numshapes); // Acts as array of size Numshapes
+    Shape = malloc(sizeof(*Shape) * (long long unsigned)Numshapes); // Acts as array of size Numshapes
     if (Shape == NULL)
     {
         printf("Failed to allocate space for Shape\n");
@@ -135,7 +135,7 @@ int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, i
         // Read first line. Get shape name and the number of lines required to read
         fscanf(fptrShapeInstructions, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
 
-        Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
+        Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * (long long unsigned)Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
         if (Shape[i].ShapePositionData == NULL)
         {
             printf("Failed to allocate space for Shape[i].ShapePositionData\n");
@@ -190,7 +190,7 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     // Get number of lines in file
     char NewLineIdentifier;
     int LineCount = 0;
-    while ((NewLineIdentifier = fgetc(fptr)) != EOF)
+    while ((NewLineIdentifier = (char)fgetc(fptr)) != EOF)
     {
         if (NewLineIdentifier == '\n')
         {
@@ -207,7 +207,7 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
 
     fscanf(fptr, "%*s %d", &Instructions->DrawGridValue); // Read value of Draw_Grid (0 or 1) and store it
 
-    Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * LineCount); // Acts as array of size LineCount
+    Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * (long long unsigned)LineCount); // Acts as array of size LineCount
     if (Instructions->ShapestoDraw == NULL)
     {
         printf("Failed to allocate space for Instructions->ShapestoDraw\n");
@@ -229,6 +229,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
 {
     if (Instructions->DrawGridValue == 1)
     {
+        printf("Drawing Grid\n");
         CreateGrid(buffer);
     }
 
@@ -245,9 +246,11 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         {
             if (!strcmp(Instructions->ShapestoDraw[i].InstructionsShapeName, Shape[j].ShapeName)) // strcmp returns 0 if strings are equal
             {
+                printf("Drawing %s\n",Shape[j].ShapeName);
+
                 // Origin is top left while gridposition 1,1 is bottom left
-                StartPos_x = ((Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + GridStartPositionOffset;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
-                StartPos_y = (-(4 - Instructions->ShapestoDraw[i].ShapeGridPosition_y) * GridSpacing) + GridStartPositionOffset; // Formula for distance to grid position. Eg for grid 2: distance = -(4-2)*30 + 5 = -55
+                StartPos_x = (((float)Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + GridStartPositionOffset;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
+                StartPos_y = (-(4 - (float)Instructions->ShapestoDraw[i].ShapeGridPosition_y) * GridSpacing) + GridStartPositionOffset; // Formula for distance to grid position. Eg for grid 2: distance = -(4-2)*30 + 5 = -55
 
                 sprintf(buffer, "S0\n");
                 SendCommands(buffer);
@@ -290,6 +293,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
     SendCommands(buffer);
     sprintf(buffer, "G0 X0 Y0\n");
     SendCommands(buffer);
+    sleep(2000);
 
     return (EXIT_SUCCESS);
 }
@@ -307,11 +311,19 @@ int CreateGrid(char *buffer)
     SendCommands(buffer);
     sprintf(buffer, "G1 X0 Y0\n");
     SendCommands(buffer);
-    sprintf(buffer, "G1 X30 Y0\n");
+    sprintf(buffer, "S0\n");
+    SendCommands(buffer);
+    sprintf(buffer, "G0 X30 Y0\n");
+    SendCommands(buffer);
+    sprintf(buffer, "S1000\n");
     SendCommands(buffer);
     sprintf(buffer, "G1 X30 Y-90\n");
     SendCommands(buffer);
-    sprintf(buffer, "G1 X60 Y-90\n");
+    sprintf(buffer, "S0\n");
+    SendCommands(buffer);
+    sprintf(buffer, "G0 X60 Y-90\n");
+    SendCommands(buffer);
+    sprintf(buffer, "S1000\n");
     SendCommands(buffer);
     sprintf(buffer, "G1 X60 Y0\n");
     SendCommands(buffer);
@@ -323,7 +335,11 @@ int CreateGrid(char *buffer)
     SendCommands(buffer);
     sprintf(buffer, "G1 X0 Y-30\n");
     SendCommands(buffer);
-    sprintf(buffer, "G1 X0 Y-60\n");
+    sprintf(buffer, "S0\n");
+    SendCommands(buffer);
+    sprintf(buffer, "G0 X0 Y-60\n");
+    SendCommands(buffer);
+    sprintf(buffer, "S1000\n");
     SendCommands(buffer);
     sprintf(buffer, "G1 X90 Y-60\n");
     SendCommands(buffer);
