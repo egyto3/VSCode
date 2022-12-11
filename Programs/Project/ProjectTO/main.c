@@ -229,7 +229,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
 {
     if (Instructions->DrawGridValue == 1)
     {
-        printf("Drawing Grid\n");
+        printf("(Drawing Grid)\n"); // Brackets to show its a G-code comment. Command not sent but useful for emulator testing
         CreateGrid(buffer);
     }
 
@@ -246,7 +246,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         {
             if (!strcmp(Instructions->ShapestoDraw[i].InstructionsShapeName, Shape[j].ShapeName)) // strcmp returns 0 if strings are equal
             {
-                printf("Drawing %s\n",Shape[j].ShapeName);
+                printf("(Drawing %s)\n",Shape[j].ShapeName);
 
                 // Origin is top left while gridposition 1,1 is bottom left
                 StartPos_x = (((float)Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + GridStartPositionOffset;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
@@ -257,13 +257,13 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
                 sprintf(buffer, "G0 X%f Y%f\n", StartPos_x, StartPos_y);
                 SendCommands(buffer);
 
-                for (k = 0; k < Shape[j].NumberLinesOfShape; k++) // Loop through lines of data in each shape (X,Y,PenStatus lines)
+                for (k = 0; k < Shape[j].NumberLinesOfShape; k++) // Loop through lines of data in each shape (X,Y,PenStatus)
                 {
                     TempPos_x = StartPos_x + Shape[j].ShapePositionData[k].xPosition;
                     TempPos_y = StartPos_y + Shape[j].ShapePositionData[k].yPosition;
 
                     // Checks if the penstatus changes. Change spindle speed to represent new value.
-                    if (k == 0 || (Shape[j].ShapePositionData[k].PenStatus != Shape[j].ShapePositionData[k - 1].PenStatus)) // 'k == 0 ||' statement to assign initial spindle speed
+                    if (k == 0 || (Shape[j].ShapePositionData[k].PenStatus != Shape[j].ShapePositionData[k - 1].PenStatus)) // Initial spindle speed or change
                     {
                         if (Shape[j].ShapePositionData[k].PenStatus == 0)
                         {
@@ -281,7 +281,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
                 }             
                 break;  // ends j for loop so it doesnt look through rest of shapes (has already found the shape)
             }
-            else if (j == *Numshapes - 1) // Check if j is the last possible value
+            else if (j == *Numshapes - 1) // Check if it has scanned through all of the shapes but theres no match
             {
                 printf("Shape '%s' not found in 'ShapeStrokeData.txt'\n", Instructions->ShapestoDraw[i].InstructionsShapeName);
             }
@@ -293,7 +293,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
     SendCommands(buffer);
     sprintf(buffer, "G0 X0 Y0\n");
     SendCommands(buffer);
-    sleep(2000);
+    Sleep(2000);
 
     return (EXIT_SUCCESS);
 }
