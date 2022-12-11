@@ -22,7 +22,7 @@ struct ShapeData
         float xPosition;
         float yPosition;
         int PenStatus;
-    } * ShapePositionData;
+    } *ShapePositionData;
 };
 
 struct InstructionData
@@ -34,13 +34,14 @@ struct InstructionData
         int ShapeGridPosition_x;
         int ShapeGridPosition_y;
         char InstructionsShapeName[MaxShapeNameSize];
-    } * ShapestoDraw;
+    } *ShapestoDraw;
 };
 
 void SendCommands(char *buffer);
 int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, int *Numshapes);
 int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions);
 int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int *Numshapes, int *NumInstructions);
+int DrawShape(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int i, int j);
 int CreateGrid(char *buffer);
 
 int main()
@@ -233,12 +234,7 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         CreateGrid(buffer);
     }
 
-    float StartPos_x = 0;
-    float StartPos_y = 0;
-    float TempPos_x = 0;
-    float TempPos_y = 0;
-
-    int i, j, k;
+    int i, j;
 
     for (i = 0; i < *NumInstructions; i++) // Loop through instructions
     {
@@ -246,40 +242,11 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         {
             if (!strcmp(Instructions->ShapestoDraw[i].InstructionsShapeName, Shape[j].ShapeName)) // strcmp returns 0 if strings are equal
             {
-                printf("(Drawing %s)\n",Shape[j].ShapeName);
+                printf("(Drawing %s)\n", Shape[j].ShapeName);
 
-                // Origin is top left while gridposition 1,1 is bottom left
-                StartPos_x = (((float)Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + GridStartPositionOffset;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
-                StartPos_y = (-(4 - (float)Instructions->ShapestoDraw[i].ShapeGridPosition_y) * GridSpacing) + GridStartPositionOffset; // Formula for distance to grid position. Eg for grid 2: distance = -(4-2)*30 + 5 = -55
+                DrawShape(buffer, Instructions, Shape, i, j);
 
-                sprintf(buffer, "S0\n");
-                SendCommands(buffer);
-                sprintf(buffer, "G0 X%f Y%f\n", StartPos_x, StartPos_y);
-                SendCommands(buffer);
-
-                for (k = 0; k < Shape[j].NumberLinesOfShape; k++) // Loop through lines of data in each shape (X,Y,PenStatus)
-                {
-                    TempPos_x = StartPos_x + Shape[j].ShapePositionData[k].xPosition;
-                    TempPos_y = StartPos_y + Shape[j].ShapePositionData[k].yPosition;
-
-                    // Checks if the penstatus changes. Change spindle speed to represent new value.
-                    if (k == 0 || (Shape[j].ShapePositionData[k].PenStatus != Shape[j].ShapePositionData[k - 1].PenStatus)) // Initial spindle speed or change
-                    {
-                        if (Shape[j].ShapePositionData[k].PenStatus == 0)
-                        {
-                            sprintf(buffer, "S0\n");
-                        }
-                        else
-                        {
-                            sprintf(buffer, "S1000\n");
-                        }
-                        SendCommands(buffer);
-                    }
-
-                    sprintf(buffer, "G%d X%f Y%f\n", Shape[j].ShapePositionData[k].PenStatus, TempPos_x, TempPos_y);
-                    SendCommands(buffer);
-                }             
-                break;  // ends j for loop so it doesnt look through rest of shapes (has already found the shape)
+                break; // ends j for loop so it doesnt look through rest of shapes (has already found the shape)
             }
             else if (j == *Numshapes - 1) // Check if it has scanned through all of the shapes but theres no match
             {
@@ -296,6 +263,49 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
     Sleep(2000);
 
     return (EXIT_SUCCESS);
+}
+
+int DrawShape(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int i, int j)
+{
+    float StartPos_x = 0;
+    float StartPos_y = 0;
+    float TempPos_x = 0;
+    float TempPos_y = 0;
+    int k;
+
+    // Origin is top left while gridposition 1,1 is bottom left
+    StartPos_x = (((float)Instructions->ShapestoDraw[i].ShapeGridPosition_x - 1) * GridSpacing) + GridStartPositionOffset;  // Formula for distance to grid position. Eg for grid 2: distance = (2-1)*30 + 5 = 35
+    StartPos_y = (-(4 - (float)Instructions->ShapestoDraw[i].ShapeGridPosition_y) * GridSpacing) + GridStartPositionOffset; // Formula for distance to grid position. Eg for grid 2: distance = -(4-2)*30 + 5 = -55
+
+    // Go to shape start position
+    sprintf(buffer, "S0\n");
+    SendCommands(buffer);
+    sprintf(buffer, "G0 X%f Y%f\n", StartPos_x, StartPos_y);
+    SendCommands(buffer);
+
+    for (k = 0; k < Shape[j].NumberLinesOfShape; k++) // Loop through lines of data in each shape (X,Y,PenStatus)
+    {
+        TempPos_x = StartPos_x + Shape[j].ShapePositionData[k].xPosition;
+        TempPos_y = StartPos_y + Shape[j].ShapePositionData[k].yPosition;
+
+        // Checks if the penstatus changes. Change spindle speed to represent new value.
+        if (k == 0 || (Shape[j].ShapePositionData[k].PenStatus != Shape[j].ShapePositionData[k - 1].PenStatus)) // Initial spindle speed or change
+        {
+            if (Shape[j].ShapePositionData[k].PenStatus == 0)
+            {
+                sprintf(buffer, "S0\n");
+            }
+            else
+            {
+                sprintf(buffer, "S1000\n");
+            }
+            SendCommands(buffer);
+        }
+
+        sprintf(buffer, "G%d X%f Y%f\n", Shape[j].ShapePositionData[k].PenStatus, TempPos_x, TempPos_y);
+        SendCommands(buffer);
+    }
+    return(EXIT_SUCCESS);
 }
 
 int CreateGrid(char *buffer)
