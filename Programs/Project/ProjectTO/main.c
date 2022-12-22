@@ -38,7 +38,7 @@ struct InstructionData
 };
 
 void SendCommands(char *buffer);
-int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, int *Numshapes);
+int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeData, int *Numshapes);
 int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions);
 int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int *Numshapes, int *NumInstructions);
 int DrawShape(char *buffer, struct InstructionData *Instructions, struct ShapeData *Shape, int i, int j);
@@ -50,16 +50,20 @@ int main()
     int Numshapes = 0;
     int NumInstructions = 0;
 
-    FILE *fptrShapeInstructions;
-    fptrShapeInstructions = fopen("ShapeStrokeData.txt", "r");
+    FILE *fptrShapeData;
+    fptrShapeData = fopen("ShapeStrokeData.txt", "r");
 
-    if (fptrShapeInstructions == NULL)
+    if (fptrShapeData == NULL)
     {
-        printf("Error opening file");
+        printf("Error opening file 'ShapeStrokeData.txt'\n");
         exit(EXIT_FAILURE);
     }
+    else
+    {
+        printf("Success opening file 'ShapeStrokeData.txt'\n");
+    }
 
-    fscanf(fptrShapeInstructions, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
+    fscanf(fptrShapeData, "%*s %d", &Numshapes); // "%*s" Indicates skipping first string. Only reads value of Numshapes
 
     struct ShapeData *Shape;
     Shape = malloc(sizeof(*Shape) * (long long unsigned)Numshapes); // Acts as array of size Numshapes
@@ -71,7 +75,7 @@ int main()
 
     struct InstructionData Instructions;
 
-    ReadShapeInformation(Shape, fptrShapeInstructions, &Numshapes);
+    ReadShapeInformation(Shape, fptrShapeData, &Numshapes);
     ReadInstructions(&Instructions, &NumInstructions);
 
     // If we cannot open the port then give up immediatly
@@ -128,25 +132,25 @@ void SendCommands(char *buffer)
     // getch(); // Omit this once basic testing with emulator has taken place
 }
 
-int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, int *Numshapes)
+int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeData, int *Numshapes)
 {
     int i;
     for (i = 0; i < *Numshapes; i++)
     {
         // Read first line. Get shape name and the number of lines required to read
-        fscanf(fptrShapeInstructions, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
+        fscanf(fptrShapeData, "%s %d", Shape[i].ShapeName, &Shape[i].NumberLinesOfShape);
 
         Shape[i].ShapePositionData = malloc(sizeof(*Shape->ShapePositionData) * (long long unsigned)Shape[i].NumberLinesOfShape); // ShapePositionData acts as array of size NumberLinesOfShape
         if (Shape[i].ShapePositionData == NULL)
         {
-            printf("Failed to allocate space for Shape[i].ShapePositionData\n");
+            printf("Failed to allocate space for ShapePositionData\n");
             exit(EXIT_FAILURE);
         }
 
         int j;
         for (j = 0; j < Shape[i].NumberLinesOfShape; j++)
         {
-            fscanf(fptrShapeInstructions, "%f %f %d", &Shape[i].ShapePositionData[j].xPosition, &Shape[i].ShapePositionData[j].yPosition, &Shape[i].ShapePositionData[j].PenStatus);
+            fscanf(fptrShapeData, "%f %f %d", &Shape[i].ShapePositionData[j].xPosition, &Shape[i].ShapePositionData[j].yPosition, &Shape[i].ShapePositionData[j].PenStatus);
 
             // Scale values
             Shape[i].ShapePositionData[j].xPosition = Shape[i].ShapePositionData[j].xPosition * ScalingAmount;
@@ -154,7 +158,7 @@ int ReadShapeInformation(struct ShapeData *Shape, FILE *fptrShapeInstructions, i
         }
     }
 
-    fclose(fptrShapeInstructions);
+    fclose(fptrShapeData);
     return (EXIT_SUCCESS);
 }
 
@@ -180,7 +184,6 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     if (fptr == NULL)
     {
         printf("Error opening file called: %s\n\n", FileName);
-        ReadInstructions(Instructions, NumInstructions);
         exit(EXIT_FAILURE);
     }
     else
@@ -211,7 +214,7 @@ int ReadInstructions(struct InstructionData *Instructions, int *NumInstructions)
     Instructions->ShapestoDraw = malloc(sizeof(*Instructions->ShapestoDraw) * (long long unsigned)LineCount); // Acts as array of size LineCount
     if (Instructions->ShapestoDraw == NULL)
     {
-        printf("Failed to allocate space for Instructions->ShapestoDraw\n");
+        printf("Failed to allocate space for ShapestoDraw\n");
         exit(EXIT_FAILURE);
     }
 
@@ -234,8 +237,8 @@ int ConverttoGCode(char *buffer, struct InstructionData *Instructions, struct Sh
         CreateGrid(buffer);
     }
 
+    // Search for shape from instructions
     int i, j;
-
     for (i = 0; i < *NumInstructions; i++) // Loop through instructions
     {
         for (j = 0; j < *Numshapes; j++) // Loop through shapes
