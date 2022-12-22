@@ -2,168 +2,95 @@
 #include <stdlib.h>
 #include <time.h>
 
-int generateCards(int *Card1, int *Card2, int *CardDealer);
-
-// struct Cards
-// {
-
-// }
-
-int main()
+struct Cardstruct
 {
-    int Card1 = 0, Card2 = 0, CardDealer = 0, CardSum = 0;
-    const enum Options { Stand,
-                         Hit,
-                         Double };
-    int Choice = 0;
-    int TrueCount = 0;
+    // int Card1;
+    // int Card2;
+    // int CardDealer;
+    enum Options
+    {
+        Stand,
+        Hit,
+        Double
+    } Choice;
+    enum VALUES
+    {
+        TWO = 2,
+        THREE,
+        FOUR,
+        FIVE,
+        SIX,
+        SEVEN,
+        EIGHT,
+        NINE,
+        TEN,
+        ACE
+    } Card1,
+        Card2, CardDealer;
+};
 
-    generateCards(&Card1, &Card2, &CardDealer);
-    printf("%d %d %d \n", Card1, Card2, CardDealer);
-    if ((Card1 == Card2)) // Split table
+int generateCards(struct Cardstruct *Cards);
+int calculateDecision(struct Cardstruct *Cards);
+
+int main(void)
+{
+
+    // int TrueCount = 0;
+
+    struct Cardstruct Cards;
+
+    generateCards(&Cards);
+    printf("%d %d %d \n", Cards.Card1, Cards.Card2, Cards.CardDealer);
+    switch (Cards.Card1)
     {
+    case (TWO):
+        printf("TWO\n");
+        break;
+    case (THREE):
+        printf("THREE\n");
+        break;
+    case (FOUR):
+        printf("FOUR\n");
+        break;
+    case (FIVE):
+        printf("FIVE\n");
+        break;
+    case (SIX):
+        printf("SIX\n");
+        break;
+    case (SEVEN):
+        printf("SEVEN\n");
+        break;
+    case (EIGHT):
+        printf("EIGHT\n");
+        break;
+    case (NINE):
+        printf("NINE\n");
+        break;
+    case (TEN):
+        printf("TEN\n");
+        break;
+    case (ACE):
+        printf("ACE\n");
+        break;
+    default:
+        break;
     }
-    else
-    {
-        if ((Card1 == 11) || (Card2 == 11)) // Soft total table
-        {
-            if ((Card1 == 8) || (Card2 == 8))
-            {
-                if (CardDealer == 6)
-                {
-                    Choice = Double;
-                }
-                else
-                {
-                    Choice = Stand;
-                }
-            }
-            else if ((Card1 == 7) || (Card2 == 7))
-            {
-                if (CardDealer <= 6)
-                {
-                    Choice = Double;
-                }
-                else if (CardDealer <= 8)
-                {
-                    Choice = Stand;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if ((Card1 == 6) || (Card2 == 6))
-            {
-                if ((CardDealer >= 3) && (CardDealer <= 6))
-                {
-                    Choice = Double;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if (((Card1 == 5) || (Card1 == 4)) || ((Card2 == 5) || (Card2 == 4)))
-            {
-                if ((CardDealer >= 4) && (CardDealer <= 6))
-                {
-                    Choice = Double;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if (((Card1 == 3) || (Card1 == 2)) || ((Card2 == 3) || (Card2 == 2)))
-            {
-                if ((CardDealer >= 5) && (CardDealer <= 6))
-                {
-                    Choice = Double;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else // nine or larger
-            {
-                Choice = Stand;
-            }
-        }
-        else // Hard total table
-        {
-            CardSum = Card1 + Card2;
-            if (CardSum >= 17)
-            {
-                Choice = Stand;
-            }
-            else if (CardSum >= 13)
-            {
-                if (CardDealer < 7)
-                {
-                    Choice = Stand;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if (CardSum >= 12)
-            {
-                if ((CardDealer >= 4) || (CardDealer <= 6))
-                {
-                    Choice = Stand;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if (CardSum == 11)
-            {
-                Choice = Double;
-            }
-            else if (CardSum == 10)
-            {
-                if (CardDealer <= 9)
-                {
-                    Choice = Double;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if (CardSum == 9)
-            {
-                if ((CardDealer >= 3) || (CardDealer <= 6))
-                {
-                    Choice = Double;
-                }
-                else
-                {
-                    Choice = Hit;
-                }
-            }
-            else if (CardSum <= 8)
-            {
-                Choice = Hit;
-            }
-        }
-    }
-    switch (Choice)
+
+    calculateDecision(&Cards);
+
+    switch (Cards.Choice)
     {
     case (Stand):
-        printf("Stand");
+        printf("Stand\n");
         break;
 
     case (Hit):
-        printf("Hit");
+        printf("Hit\n");
         break;
 
     case (Double):
-        printf("Double");
+        printf("Double\n");
         break;
 
     default:
@@ -173,22 +100,153 @@ int main()
     return (EXIT_SUCCESS);
 }
 
-int generateCards(int *Card1, int *Card2, int *CardDealer)
+int generateCards(struct Cardstruct *Cards)
 {
-    // const enum VALUES { ACE = 1,
-    //                     TWO,
-    //                     THREE,
-    //                     FOUR,
-    //                     FIVE,
-    //                     SIX,
-    //                     SEVEN,
-    //                     EIGHT,
-    //                     NINE,
-    //                     TEN };
+
     srand((unsigned int)time(NULL));
-    *Card1 = (rand() % 10) + 2;
-    *Card2 = (rand() % 10) + 2;
-    *CardDealer = (rand() % 10) + 2;
+    Cards->Card1 = (rand() % 10) + 2; // Random number 2-11
+    Cards->Card2 = (rand() % 10) + 2;
+    Cards->CardDealer = (rand() % 10) + 2;
+
+    return (EXIT_SUCCESS);
+}
+
+int calculateDecision(struct Cardstruct *Cards)
+{
+    int CardSum = 0;
+
+    if ((Cards->Card1 == Cards->Card2)) // Split table
+    {
+    }
+    else
+    {
+        if ((Cards->Card1 == 11) || (Cards->Card2 == 11)) // Soft total table
+        {
+            if ((Cards->Card1 == 8) || (Cards->Card2 == 8))
+            {
+                if (Cards->CardDealer == 6)
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Stand;
+                }
+            }
+            else if ((Cards->Card1 == 7) || (Cards->Card2 == 7))
+            {
+                if (Cards->CardDealer <= 6)
+                {
+                    Cards->Choice = Double;
+                }
+                else if (Cards->CardDealer <= 8)
+                {
+                    Cards->Choice = Stand;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if ((Cards->Card1 == 6) || (Cards->Card2 == 6))
+            {
+                if ((Cards->CardDealer >= 3) && (Cards->CardDealer <= 6))
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if (((Cards->Card1 == 5) || (Cards->Card1 == 4)) || ((Cards->Card2 == 5) || (Cards->Card2 == 4)))
+            {
+                if ((Cards->CardDealer >= 4) && (Cards->CardDealer <= 6))
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if (((Cards->Card1 == 3) || (Cards->Card1 == 2)) || ((Cards->Card2 == 3) || (Cards->Card2 == 2)))
+            {
+                if ((Cards->CardDealer >= 5) && (Cards->CardDealer <= 6))
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else // nine or larger
+            {
+                Cards->Choice = Stand;
+            }
+        }
+        else // Hard total table
+        {
+            CardSum = (int)Cards->Card1 + (int)Cards->Card2;
+            if (CardSum >= 17)
+            {
+                Cards->Choice = Stand;
+            }
+            else if (CardSum >= 13)
+            {
+                if (Cards->CardDealer < 7)
+                {
+                    Cards->Choice = Stand;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if (CardSum >= 12)
+            {
+                if ((Cards->CardDealer >= 4) || (Cards->CardDealer <= 6))
+                {
+                    Cards->Choice = Stand;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if (CardSum == 11)
+            {
+                Cards->Choice = Double;
+            }
+            else if (CardSum == 10)
+            {
+                if (Cards->CardDealer <= 9)
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if (CardSum == 9)
+            {
+                if ((Cards->CardDealer >= 3) || (Cards->CardDealer <= 6))
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else if (CardSum <= 8)
+            {
+                Cards->Choice = Hit;
+            }
+        }
+    }
 
     return (EXIT_SUCCESS);
 }
