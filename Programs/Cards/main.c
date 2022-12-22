@@ -6,8 +6,14 @@
 #define SecondCard 1
 #define DealerCard 2
 
+#define Deviations 0
+#define Surrendering 1
+#define Doubling 1
+#define DoubleAfterSplit 1
+
 struct Cardstruct
 {
+    int TrueCount;
     enum Options
     {
         Stand,
@@ -28,8 +34,7 @@ struct Cardstruct
         NINE,
         TEN,
         ACE
-    } Card[DealerCard];
-    int TrueCount;
+    } Card[3];
 };
 
 int generateCards(struct Cardstruct *Cards);
@@ -43,6 +48,7 @@ int main(void)
 {
 
     struct Cardstruct Cards;
+    Cards.TrueCount = 1;
 
     generateCards(&Cards);
     calculateDecision(&Cards);
@@ -58,6 +64,9 @@ int generateCards(struct Cardstruct *Cards)
     Cards->Card[FirstCard] = (rand() % 10) + 2; // Random number 2-11
     Cards->Card[SecondCard] = (rand() % 10) + 2;
     Cards->Card[DealerCard] = (rand() % 10) + 2;
+    // Cards->Card[FirstCard] = 6;
+    // Cards->Card[SecondCard] = 9;
+    // Cards->Card[DealerCard] = 9;
 
     return (EXIT_SUCCESS);
 }
@@ -87,49 +96,80 @@ int calculateHardTable(struct Cardstruct *Cards)
 {
     int CardSum = 0;
     CardSum = (int)Cards->Card[FirstCard] + (int)Cards->Card[SecondCard];
+
     if (CardSum >= 17)
     {
         Cards->Choice = Stand;
     }
     else if (CardSum == 16)
     {
-        if (Cards->Card[DealerCard] >= 9)
+        if ((((Cards->Card[DealerCard] == 9) && (Cards->TrueCount >= 4)) || ((Cards->Card[DealerCard] == 10) && (Cards->TrueCount > 0)) || ((Cards->Card[DealerCard] == 11) && (Cards->TrueCount >= 3))) && Deviations)
+        {
+            Cards->Choice = Stand;
+        }
+        else if (((Cards->Card[DealerCard] == 8) && (Cards->TrueCount >= 4)) && (Deviations && Surrendering))
         {
             Cards->Choice = Surrender;
         }
+        else if ((Cards->Card[DealerCard] == 9) && (Cards->TrueCount <= -1))
+        {
+            Cards->Choice = Hit;
+        }
         else
         {
-            if (Cards->Card[DealerCard] <= 6)
+            if ((Cards->Card[DealerCard] >= 9) && Surrendering)
             {
-                Cards->Choice = Stand;
+                Cards->Choice = Surrender;
             }
             else
             {
-                Cards->Choice = Hit;
+                if (Cards->Card[DealerCard] <= 6)
+                {
+                    Cards->Choice = Stand;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
             }
         }
     }
     else if (CardSum == 15)
     {
-        if (Cards->Card[DealerCard] == 10)
+        if ((((Cards->Card[DealerCard] == 10) && (Cards->TrueCount >= 4)) || ((Cards->Card[DealerCard] == 11) && (Cards->TrueCount >= 5))) && Deviations)
+        {
+            Cards->Choice = Stand;
+        }
+        else if ((((Cards->Card[DealerCard] == 9) && (Cards->TrueCount >= 2)) || ((Cards->Card[DealerCard] == 11) && (Cards->TrueCount >= -1))) && (Deviations && Surrendering))
         {
             Cards->Choice = Surrender;
         }
+        else if ((Cards->Card[DealerCard] == 10) && (Cards->TrueCount < 0))
+        {
+            Cards->Choice = Hit;
+        }
         else
         {
-            if (Cards->Card[DealerCard] <= 6)
+            if ((Cards->Card[DealerCard] == 10) && Surrendering)
             {
-                Cards->Choice = Stand;
+                Cards->Choice = Surrender;
             }
             else
             {
-                Cards->Choice = Hit;
+                if (Cards->Card[DealerCard] <= 6)
+                {
+                    Cards->Choice = Stand;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
             }
         }
     }
     else if (CardSum >= 13)
     {
-        if ((CardSum == 13) && (Cards->Card[DealerCard] == 2) && (Cards->TrueCount <= -1))
+        if ((CardSum == 13) && (Cards->Card[DealerCard] == 2) && (Cards->TrueCount <= -1) && Deviations)
         {
             Cards->Choice = Hit;
         }
@@ -147,11 +187,11 @@ int calculateHardTable(struct Cardstruct *Cards)
     }
     else if (CardSum == 12)
     {
-        if (((Cards->Card[DealerCard] == 2) && (Cards->TrueCount >= 3)) || ((Cards->Card[DealerCard] == 3) && (Cards->TrueCount >= 2)))
+        if ((((Cards->Card[DealerCard] == 2) && (Cards->TrueCount >= 3)) || ((Cards->Card[DealerCard] == 3) && (Cards->TrueCount >= 2))) && Deviations)
         {
             Cards->Choice = Stand;
         }
-        else if ((Cards->Card[DealerCard] == 4) && (Cards->TrueCount < 0))
+        else if ((Cards->Card[DealerCard] == 4) && (Cards->TrueCount < 0) && Deviations)
         {
             Cards->Choice = Hit;
         }
@@ -169,13 +209,34 @@ int calculateHardTable(struct Cardstruct *Cards)
     }
     else if (CardSum == 11)
     {
-        Cards->Choice = Double;
+        if (Doubling)
+        {
+            Cards->Choice = Double;
+        }
+        else
+        {
+            Cards->Choice = Hit;
+        }
     }
     else if (CardSum == 10)
     {
-        if (Cards->Card[DealerCard] <= 9)
+        if (Doubling)
         {
-            Cards->Choice = Double;
+            if ((((Cards->Card[DealerCard] == 10) && (Cards->TrueCount >= 4)) || ((Cards->Card[DealerCard] == 11) && (Cards->TrueCount >= 3))) && Deviations)
+            {
+                Cards->Choice = Double;
+            }
+            else
+            {
+                if (Cards->Card[DealerCard] <= 9)
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
         }
         else
         {
@@ -184,18 +245,46 @@ int calculateHardTable(struct Cardstruct *Cards)
     }
     else if (CardSum == 9)
     {
-        if ((Cards->Card[DealerCard] >= 3) && (Cards->Card[DealerCard] <= 6))
+        if (Doubling)
         {
-            Cards->Choice = Double;
+            if ((((Cards->Card[DealerCard] == 2) && (Cards->TrueCount >= 1)) || ((Cards->Card[DealerCard] == 7) && (Cards->TrueCount >= 3))) && Deviations)
+            {
+                Cards->Choice = Double;
+            }
+            else
+            {
+                if ((Cards->Card[DealerCard] >= 3) && (Cards->Card[DealerCard] <= 6))
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
         }
         else
         {
             Cards->Choice = Hit;
         }
     }
-    else if (CardSum <= 8)
+    else // if (CardSum <= 8)
     {
-        Cards->Choice = Hit;
+        if (Doubling)
+        {
+            if (((Cards->Card[DealerCard] == 6) && (Cards->TrueCount >= 2)) && Deviations)
+            {
+                Cards->Choice = Double;
+            }
+            else
+            {
+                Cards->Choice = Hit;
+            }
+        }
+        else
+        {
+            Cards->Choice = Hit;
+        }
     }
     return (EXIT_SUCCESS);
 }
@@ -204,20 +293,45 @@ int calculateSoftTable(struct Cardstruct *Cards)
 {
     if ((Cards->Card[FirstCard] == 8) || (Cards->Card[SecondCard] == 8))
     {
-        if (Cards->Card[DealerCard] == 6)
+        if ((((Cards->Card[DealerCard] == 4) && (Cards->TrueCount >= 3)) || ((Cards->Card[DealerCard] == 5) && (Cards->TrueCount >= 1))) && Deviations && Doubling)
         {
             Cards->Choice = Double;
         }
-        else
+        else if (((Cards->Card[DealerCard] == 6) && (Cards->TrueCount < 0)) && Deviations)
         {
             Cards->Choice = Stand;
+        }
+        else
+        {
+            if (Cards->Card[DealerCard] == 6)
+            {
+                if (Doubling)
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Stand;
+                }
+            }
+            else
+            {
+                Cards->Choice = Stand;
+            }
         }
     }
     else if ((Cards->Card[FirstCard] == 7) || (Cards->Card[SecondCard] == 7))
     {
         if (Cards->Card[DealerCard] <= 6)
         {
-            Cards->Choice = Double;
+            if (Doubling)
+            {
+                Cards->Choice = Double;
+            }
+            else
+            {
+                Cards->Choice = Stand;
+            }
         }
         else if (Cards->Card[DealerCard] <= 8)
         {
@@ -230,20 +344,41 @@ int calculateSoftTable(struct Cardstruct *Cards)
     }
     else if ((Cards->Card[FirstCard] == 6) || (Cards->Card[SecondCard] == 6))
     {
-        if ((Cards->Card[DealerCard] >= 3) && (Cards->Card[DealerCard] <= 6))
+        if ((Cards->Card[DealerCard] == 2) && (Cards->TrueCount >= 1) && Deviations && Doubling)
         {
             Cards->Choice = Double;
         }
         else
         {
-            Cards->Choice = Hit;
+            if ((Cards->Card[DealerCard] >= 3) && (Cards->Card[DealerCard] <= 6))
+            {
+                if (Doubling)
+                {
+                    Cards->Choice = Double;
+                }
+                else
+                {
+                    Cards->Choice = Hit;
+                }
+            }
+            else
+            {
+                Cards->Choice = Hit;
+            }
         }
     }
     else if (((Cards->Card[FirstCard] == 5) || (Cards->Card[FirstCard] == 4)) || ((Cards->Card[SecondCard] == 5) || (Cards->Card[SecondCard] == 4)))
     {
         if ((Cards->Card[DealerCard] >= 4) && (Cards->Card[DealerCard] <= 6))
         {
-            Cards->Choice = Double;
+            if (Doubling)
+            {
+                Cards->Choice = Double;
+            }
+            else
+            {
+                Cards->Choice = Hit;
+            }
         }
         else
         {
@@ -254,8 +389,16 @@ int calculateSoftTable(struct Cardstruct *Cards)
     {
         if ((Cards->Card[DealerCard] >= 5) && (Cards->Card[DealerCard] <= 6))
         {
-            Cards->Choice = Double;
+            if (Doubling)
+            {
+                Cards->Choice = Double;
+            }
+            else
+            {
+                Cards->Choice = Hit;
+            }
         }
+
         else
         {
             Cards->Choice = Hit;
@@ -277,7 +420,14 @@ int calculateSplitTable(struct Cardstruct *Cards)
     }
     else if (Cards->Card[FirstCard] == 10)
     {
-        calculateHardTable(Cards);
+        if ((((Cards->Card[DealerCard] == 4) && (Cards->TrueCount >= 6)) || ((Cards->Card[DealerCard] == 5) && (Cards->TrueCount >= 5)) || ((Cards->Card[DealerCard] == 6) && (Cards->TrueCount >= 4))) && Deviations)
+        {
+            Cards->Choice = Split;
+        }
+        else
+        {
+            calculateHardTable(Cards);
+        }
     }
     else if (Cards->Card[FirstCard] == 9)
     {
@@ -303,7 +453,7 @@ int calculateSplitTable(struct Cardstruct *Cards)
     }
     else if (Cards->Card[FirstCard] == 6)
     {
-        if ((Cards->Card[DealerCard] >= 7))
+        if ((Cards->Card[DealerCard] >= 7) || ((Cards->Card[DealerCard] == 2) && (!DoubleAfterSplit)))
             calculateHardTable(Cards);
         else
         {
@@ -316,7 +466,7 @@ int calculateSplitTable(struct Cardstruct *Cards)
     }
     else if (Cards->Card[FirstCard] == 4)
     {
-        if ((Cards->Card[DealerCard] == 5) || (Cards->Card[DealerCard] == 6))
+        if (((Cards->Card[DealerCard] == 5) || (Cards->Card[DealerCard] == 6)) && (DoubleAfterSplit))
         {
             Cards->Choice = Split;
         }
@@ -327,7 +477,7 @@ int calculateSplitTable(struct Cardstruct *Cards)
     }
     else // Pair of 3 or 2
     {
-        if ((Cards->Card[DealerCard] >= 8))
+        if ((Cards->Card[DealerCard] >= 8) || ((Cards->Card[DealerCard] <= 3) && (!DoubleAfterSplit)))
             calculateHardTable(Cards);
         else
         {
