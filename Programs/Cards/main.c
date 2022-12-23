@@ -625,6 +625,7 @@ int compareUserChoice(struct Cardstruct *Cards)
     char ComputedResult[10];
     int score = 0;
     int i;
+    char *end;
     Cards->arrayPostitionSwitchtoDealer = 0;
 
     calculateDecision(Cards);
@@ -653,24 +654,47 @@ int compareUserChoice(struct Cardstruct *Cards)
     {
         printData(Cards);
 
-        // Count
-        printf("What is the count?\n");
-        scanf("%9s", buffer);
-        UserCountGuess = atoi(buffer);
+        // User input for count
+        while (1)
+        {
+            printf("What is the count?\n");
+            scanf("%9s", buffer);
+            UserCountGuess = strtol(buffer, &end, 10);
+            if (end == buffer)
+            {
+                printf("Not a valid number\n\n");
+            }
+            else
+            {
+                break;
+            }
+        }
         printf("Your choice: %d\n", UserCountGuess);
         printf("The actual count: %d\n", Cards->Count);
 
+        // User input for true count
         if (DeckNumber != 1)
         {
-            printf("What is the true count?\n");
-            scanf("%9s", buffer);
-            UserTrueCountGuess = atoi(buffer);
+            while (1)
+            {
+                printf("What is the true count?\n");
+                scanf("%9s", buffer);
+                UserTrueCountGuess = strtol(buffer, &end, 10);
+                if (end == buffer)
+                {
+                    printf("Not a valid number\n\n");
+                }
+                else
+                {
+                    break;
+                }
+            }
             printf("Your choice: %d\n", UserTrueCountGuess);
             printf("The true count: %d\n", Cards->TrueCount);
         }
 
-        // Strategy choice
-        while(1)
+        // Strategy decision
+        while (1)
         {
             printf("\nWhat should you do?\n");
             scanf("%s", UserDecisionGuess);
