@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #define FirstCard 0
 #define SecondCard 1
@@ -23,7 +24,8 @@ struct Cardstruct
         Double,
         Split,
         Surrender
-    } Choice;
+    } Choice,
+        UserChoice;
     enum VALUES
     {
         TWO = 2,
@@ -51,10 +53,53 @@ int main(void)
 
     struct Cardstruct Cards;
     Cards.TrueCount = 1;
+    char UserInput[10];
+    char ComputedResult[10];
+    int score = 0;
 
     generateCards(&Cards);
     calculateDecision(&Cards);
     printData(&Cards);
+
+    printf("What should you do?\n");
+    scanf("%s", UserInput);
+    printf("Your choice: %s\n", UserInput);
+
+    switch (Cards.Choice)
+    {
+    case (Stand):
+        strcpy(ComputedResult, "Stand");
+        break;
+
+    case (Hit):
+        strcpy(ComputedResult, "Hit");
+        break;
+
+    case (Double):
+        strcpy(ComputedResult, "Double");
+        break;
+
+    case (Split):
+        strcpy(ComputedResult, "Split");
+        break;
+
+    case (Surrender):
+        strcpy(ComputedResult, "Surrender");
+        break;
+
+    default:
+        break;
+    }
+    printf("You should: %s\n", ComputedResult);
+    if (!strcmp(UserInput, ComputedResult))
+    {
+        score += 1;
+        printf("Correct\nScore = %d\n", score);
+    }
+    else
+    {
+        printf("Incorrect\nScore = %d\n", score);
+    }
 
     return (EXIT_SUCCESS);
 }
@@ -69,7 +114,7 @@ int generateCards(struct Cardstruct *Cards)
     //  Cards->Card[FirstCard] = 6;
     //  Cards->Card[SecondCard] = 9;
     //  Cards->Card[DealerCard] = 9;
-
+    srand((unsigned int)time(NULL));
     int temp, Value1, Value2, suit, cardNumber;
     int i;
     for (i = 0; i < 52 * DeckNumber; i++)
@@ -79,7 +124,6 @@ int generateCards(struct Cardstruct *Cards)
     // shuffle deck
     for (i = 0; i < 1000; i++)
     {
-        srand((unsigned int)time(NULL));
         Value1 = (rand() % 52);
         Value2 = (rand() % 52);
         // swap cards
@@ -583,32 +627,6 @@ int printData(struct Cardstruct *Cards)
         default:
             break;
         }
-    }
-
-    switch (Cards->Choice)
-    {
-    case (Stand):
-        printf("Stand\n");
-        break;
-
-    case (Hit):
-        printf("Hit\n");
-        break;
-
-    case (Double):
-        printf("Double\n");
-        break;
-
-    case (Split):
-        printf("Split\n");
-        break;
-
-    case (Surrender):
-        printf("Surrender\n");
-        break;
-
-    default:
-        break;
     }
 
     return (EXIT_SUCCESS);
