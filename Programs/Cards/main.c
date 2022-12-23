@@ -7,7 +7,7 @@
 #define SecondCard 2
 #define DealerCard 0
 
-#define Deviations 0
+#define Deviations 1
 #define Surrendering 1
 #define Doubling 1
 #define DoubleAfterSplit 1
@@ -20,6 +20,7 @@ struct Cardstruct
     int arrayPostitionSwitchtoDealer;
     int CardSum;
     int DealerCardSum;
+    int Count;
     int TrueCount;
     enum Options
     {
@@ -53,6 +54,7 @@ int calculateSoftTable(struct Cardstruct *Cards);
 int calculateSplitTable(struct Cardstruct *Cards);
 int printData(struct Cardstruct *Cards);
 int compareUserChoice(struct Cardstruct *Cards);
+int calculateCount(struct Cardstruct *Cards);
 
 int main(void)
 {
@@ -64,6 +66,8 @@ int main(void)
     generateCards(&Cards);
     Cards.CardsDrawn = 2;
     compareUserChoice(&Cards);
+
+    // Next round
 
     return (EXIT_SUCCESS);
 }
@@ -612,12 +616,14 @@ int printData(struct Cardstruct *Cards)
 
 int compareUserChoice(struct Cardstruct *Cards)
 {
-    char UserInput[10];
+    char UserDecisionGuess[10];
+    int UserCountGuess, UserTrueCountGuess;
     char ComputedResult[10];
     int score = 0;
     Cards->arrayPostitionSwitchtoDealer = 0;
 
     calculateDecision(Cards);
+    calculateCount(Cards);
 
     if (Cards->CardSum > 21)
     {
@@ -641,9 +647,24 @@ int compareUserChoice(struct Cardstruct *Cards)
     else
     {
         printData(Cards);
+        // Count
+        printf("What is the count?\n");
+        scanf("%d", &UserCountGuess);
+        printf("Your choice: %d\n", UserCountGuess);
+        printf("The actual count: %d\n", Cards->Count);
+
+        if (DeckNumber != 1)
+        {
+            printf("What is the true count?\n");
+            scanf("%d", &UserTrueCountGuess);
+            printf("Your choice: %d\n", UserTrueCountGuess);
+            printf("The true count: %d\n", Cards->TrueCount);
+        }
+
+        // Strategy choice
         printf("What should you do?\n");
-        scanf("%s", UserInput);
-        printf("Your choice: %s\n", UserInput);
+        scanf("%s", UserDecisionGuess);
+        printf("Your choice: %s\n", UserDecisionGuess);
 
         switch (Cards->Choice)
         {
@@ -671,7 +692,7 @@ int compareUserChoice(struct Cardstruct *Cards)
             break;
         }
 
-        if (!strcmp(UserInput, ComputedResult))
+        if (!strcmp(UserDecisionGuess, ComputedResult))
         {
             score += 1;
             printf("Correct! ");
@@ -682,18 +703,19 @@ int compareUserChoice(struct Cardstruct *Cards)
         }
         printf("You should: %s\nScore = %d\n", ComputedResult, score);
 
-        if (!strcmp(UserInput, "Stand"))
+        if (!strcmp(UserDecisionGuess, "Stand"))
         {
             // next hand
             Cards->DealerCardSum = Cards->Card[DealerCard];
             Cards->arrayPostitionSwitchtoDealer = Cards->CardsDrawn;
-            while (Cards->DealerCardSum <= 17) // hit // TODO soft 17
+            while (Cards->DealerCardSum < 17) // hit
             {
                 Cards->CardsDrawn += 1;
                 Cards->DealerCardSum += (int)Cards->Card[Cards->CardsDrawn];
+                calculateCount(Cards);
                 printData(Cards);
 
-                if (Cards->DealerCardSum > 21)
+                if ((Cards->DealerCardSum > 21) || (Cards->DealerCardSum == 17))
                 {
                     int j;
                     for (j = 0; j <= Cards->CardsDrawn; j++)
@@ -731,5 +753,29 @@ int compareUserChoice(struct Cardstruct *Cards)
             compareUserChoice(Cards);
         }
     }
+    return (EXIT_SUCCESS);
+}
+
+int calculateCount(struct Cardstruct *Cards)
+{
+    Cards->Count = 0;
+    int i;
+    for (i = 0; i <= Cards->CardsDrawn; i++)
+    {
+        if ((Cards->Card[i] >= 2) && (Cards->Card[i] <= 6))
+        {
+            Cards->Count += 1;
+        }
+        else if ((Cards->Card[i] >= 7) && (Cards->Card[i] <= 9))
+        {
+            // Do nothing //Cards->Count += 0;
+        }
+        else // Ace or 10
+        {
+            Cards->Count -= 1;
+        }
+    }
+    Cards->TrueCount = Cards->Count / DeckNumber;
+
     return (EXIT_SUCCESS);
 }
