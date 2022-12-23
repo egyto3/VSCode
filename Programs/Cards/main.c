@@ -17,7 +17,9 @@ struct Cardstruct
 {
     int deck[52];
     int CardsDrawn;
+    int arrayPostitionSwitchtoDealer;
     int CardSum;
+    int DealerCardSum;
     int TrueCount;
     enum Options
     {
@@ -50,7 +52,7 @@ int calculateHardTable(struct Cardstruct *Cards);
 int calculateSoftTable(struct Cardstruct *Cards);
 int calculateSplitTable(struct Cardstruct *Cards);
 int printData(struct Cardstruct *Cards);
-int makeChoice(struct Cardstruct *Cards);
+int compareUserChoice(struct Cardstruct *Cards);
 
 int main(void)
 {
@@ -61,7 +63,7 @@ int main(void)
 
     generateCards(&Cards);
     Cards.CardsDrawn = 2;
-    makeChoice(&Cards);
+    compareUserChoice(&Cards);
 
     return (EXIT_SUCCESS);
 }
@@ -551,11 +553,14 @@ int calculateSplitTable(struct Cardstruct *Cards)
 int printData(struct Cardstruct *Cards)
 {
     int i;
+    int j = 1;
+    printf("\n");
     for (i = 0; i <= Cards->CardsDrawn; i++)
     {
-        if (i == 0)
+        if ((i == 0) || ((Cards->arrayPostitionSwitchtoDealer) && (i > Cards->arrayPostitionSwitchtoDealer)))
         {
-            printf("\nDealer Card 1 = ");
+            printf("Dealer Card %d = ", j);
+            j++;
         }
         else
         {
@@ -605,11 +610,12 @@ int printData(struct Cardstruct *Cards)
     return (EXIT_SUCCESS);
 }
 
-int makeChoice(struct Cardstruct *Cards)
+int compareUserChoice(struct Cardstruct *Cards)
 {
     char UserInput[10];
     char ComputedResult[10];
     int score = 0;
+    Cards->arrayPostitionSwitchtoDealer = 0;
 
     calculateDecision(Cards);
 
@@ -621,7 +627,7 @@ int makeChoice(struct Cardstruct *Cards)
             if (Cards->Card[i] == ACE)
             {
                 Cards->Card[i] = 1;
-                makeChoice(Cards);
+                compareUserChoice(Cards);
             }
         }
         printData(Cards);
@@ -679,12 +685,50 @@ int makeChoice(struct Cardstruct *Cards)
         if (!strcmp(UserInput, "Stand"))
         {
             // next hand
+            Cards->DealerCardSum = Cards->Card[DealerCard];
+            Cards->arrayPostitionSwitchtoDealer = Cards->CardsDrawn;
+            while (Cards->DealerCardSum <= 17) // hit // TODO soft 17
+            {
+                Cards->CardsDrawn += 1;
+                Cards->DealerCardSum += (int)Cards->Card[Cards->CardsDrawn];
+                printData(Cards);
+
+                if (Cards->DealerCardSum > 21)
+                {
+                    int j;
+                    for (j = 0; j <= Cards->CardsDrawn; j++)
+                    {
+                        if (Cards->Card[j] == ACE && ((j == 0) || (j > Cards->arrayPostitionSwitchtoDealer)))
+                        {
+                            Cards->Card[j] = 1;
+                            Cards->DealerCardSum -= 10;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (Cards->DealerCardSum > 21)
+            {
+                printf("Dealer bust (%d). You win!\n", Cards->DealerCardSum);
+            }
+            else if (Cards->CardSum > Cards->DealerCardSum)
+            {
+                printf("You scored higher than the dealer %d>%d. You win!\n", Cards->CardSum, Cards->DealerCardSum);
+            }
+            else if (Cards->CardSum == Cards->DealerCardSum)
+            {
+                printf("Draw\n");
+            }
+            else
+            {
+                printf("You scored lower than the dealer %d<%d. You lose!\n", Cards->CardSum, Cards->DealerCardSum);
+            }
             return (EXIT_SUCCESS);
         }
         else
         {
             Cards->CardsDrawn += 1;
-            makeChoice(Cards);
+            compareUserChoice(Cards);
         }
     }
     return (EXIT_SUCCESS);
