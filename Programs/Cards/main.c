@@ -11,11 +11,12 @@
 #define Surrendering 1
 #define Doubling 1
 #define DoubleAfterSplit 1
-#define DeckNumber 1
+#define DeckNumber 2
+#define SplitLimit 2
 
 struct Cardstruct
 {
-    int deck[52];
+    int *deck;
     int CardsDrawn;
     int arrayPostitionSwitchtoDealer;
     int CardSum;
@@ -69,21 +70,22 @@ int main(void)
 
     // Next round
 
+    // free(Cards.deck);
     return (EXIT_SUCCESS);
 }
 
 int generateCards(struct Cardstruct *Cards)
 {
-
-    // srand((unsigned int)time(NULL));
-    //  Cards->Card[FirstCard] = (rand() % 10) + 2; // Random number 2-11
-    //  Cards->Card[SecondCard] = (rand() % 10) + 2;
-    //  Cards->Card[DealerCard] = (rand() % 10) + 2;
-    //  Cards->Card[FirstCard] = 6;
-    //  Cards->Card[SecondCard] = 9;
-    //  Cards->Card[DealerCard] = 9;
     srand((unsigned int)time(NULL));
     int temp, Value1, Value2, suit, cardNumber;
+
+    Cards->deck = malloc(sizeof(Cards->deck) * DeckNumber);
+    if (Cards->deck == NULL)
+    {
+        printf("Failed to allocate space for deck\n");
+        exit(EXIT_FAILURE);
+    }
+
     int i;
     for (i = 0; i < 52 * DeckNumber; i++)
     {
@@ -617,17 +619,20 @@ int printData(struct Cardstruct *Cards)
 int compareUserChoice(struct Cardstruct *Cards)
 {
     char UserDecisionGuess[10];
-    int UserCountGuess, UserTrueCountGuess;
+    char buffer[10];
+    int UserCountGuess = 0;
+    int UserTrueCountGuess = 0;
     char ComputedResult[10];
     int score = 0;
+    int i;
     Cards->arrayPostitionSwitchtoDealer = 0;
 
     calculateDecision(Cards);
     calculateCount(Cards);
 
+    // check if bust
     if (Cards->CardSum > 21)
     {
-        int i;
         for (i = 1; i <= Cards->CardsDrawn; i++)
         {
             if (Cards->Card[i] == ACE)
@@ -647,24 +652,44 @@ int compareUserChoice(struct Cardstruct *Cards)
     else
     {
         printData(Cards);
+
         // Count
         printf("What is the count?\n");
-        scanf("%d", &UserCountGuess);
+        scanf("%9s", buffer);
+        UserCountGuess = atoi(buffer);
         printf("Your choice: %d\n", UserCountGuess);
         printf("The actual count: %d\n", Cards->Count);
 
         if (DeckNumber != 1)
         {
             printf("What is the true count?\n");
-            scanf("%d", &UserTrueCountGuess);
+            scanf("%9s", buffer);
+            UserTrueCountGuess = atoi(buffer);
             printf("Your choice: %d\n", UserTrueCountGuess);
             printf("The true count: %d\n", Cards->TrueCount);
         }
 
         // Strategy choice
-        printf("What should you do?\n");
-        scanf("%s", UserDecisionGuess);
-        printf("Your choice: %s\n", UserDecisionGuess);
+        while(1)
+        {
+            printf("\nWhat should you do?\n");
+            scanf("%s", UserDecisionGuess);
+            printf("Your choice: %s\n", UserDecisionGuess);
+
+            // Check if choice is possible
+            if (strcmp(UserDecisionGuess, "Stand") && strcmp(UserDecisionGuess, "Hit") && strcmp(UserDecisionGuess, "Double") && strcmp(UserDecisionGuess, "Split") && strcmp(UserDecisionGuess, "Surrender"))
+            {
+                printf("Not an option\n");
+            }
+            else if (!strcmp(UserDecisionGuess, "Split") && !(Cards->Card[FirstCard] == Cards->Card[SecondCard]))
+            {
+                printf("You can't split\n");
+            }
+            else
+            {
+                break;
+            }
+        }
 
         switch (Cards->Choice)
         {
@@ -689,6 +714,7 @@ int compareUserChoice(struct Cardstruct *Cards)
             break;
 
         default:
+            printf("Not a valid option\n");
             break;
         }
 
