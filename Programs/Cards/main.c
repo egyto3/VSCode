@@ -3,10 +3,6 @@
 #include <time.h>
 #include <string.h>
 
-// #define FirstCard 1
-// #define SecondCard 2
-// #define DealerCard 0
-
 #define Deviations 1
 #define Surrendering 1
 #define Doubling 1
@@ -61,6 +57,7 @@ int calculateCount(struct Cardstruct *Cards);
 
 int main(void)
 {
+    int endShoe = 0;
 
     struct Cardstruct Cards;
     Cards.TrueCount = 1;
@@ -72,20 +69,24 @@ int main(void)
 
     generateCards(&Cards);
     Cards.CardsDrawn = 0;
+    endShoe = (52 * DeckNumber) - 10; // Arbitrary currently
 
-    int i;
-    for (i = 0; i <= 10; i++)
+    int i = 1;
+    while (Cards.CardsDrawn < endShoe)
     {
-        printf("\n------------------ROUND %d------------------\n", i + 1);
+        printf("\n------------------ROUND %d------------------\n", i);
         Cards.CardsDrawn += 3;
         compareUserChoice(&Cards);
         // Next round
         Cards.DealerCard = Cards.CardsDrawn;
         Cards.FirstCard = Cards.CardsDrawn + 1;
         Cards.SecondCard = Cards.CardsDrawn + 2;
+        i++;
     }
+    printf("End of shoe");
 
-    // free(Cards.deck);
+    free(Cards.Card);
+    free(Cards.deck);
     return (EXIT_SUCCESS);
 }
 
@@ -785,10 +786,16 @@ int compareUserChoice(struct Cardstruct *Cards)
         if (!strcmp(UserDecisionGuess, "Stand"))
         {
             // next hand
+
             Cards->DealerCardSum = Cards->Card[Cards->DealerCard];
             Cards->arrayPostitionSwitchtoDealer = Cards->CardsDrawn - 1;
             while (Cards->DealerCardSum < 17) // hit
             {
+                if (Cards->CardsDrawn >= (52 * DeckNumber))
+                {
+                    printf("Can't draw more cards (deck is empty)");
+                    return(EXIT_FAILURE);
+                }
                 Cards->CardsDrawn += 1;
                 Cards->DealerCardSum += (int)Cards->Card[Cards->CardsDrawn - 1];
                 calculateCount(Cards);
@@ -828,6 +835,11 @@ int compareUserChoice(struct Cardstruct *Cards)
         }
         else
         {
+            if (Cards->CardsDrawn >= (52 * DeckNumber))
+            {
+                printf("Can't draw more cards (deck is empty)");
+                return(EXIT_FAILURE);
+            }
             Cards->CardsDrawn += 1;
             compareUserChoice(Cards);
         }
