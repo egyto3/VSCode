@@ -90,16 +90,17 @@ int main(void)
     default:
         break;
     }
-    printf("You should: %s\n", ComputedResult);
+
     if (!strcmp(UserInput, ComputedResult))
     {
         score += 1;
-        printf("Correct\nScore = %d\n", score);
+        printf("Correct! ");
     }
     else
     {
-        printf("Incorrect\nScore = %d\n", score);
+        printf("Incorrect! ");
     }
+        printf("You should: %s\nScore = %d\n", ComputedResult,score);
 
     return (EXIT_SUCCESS);
 }
