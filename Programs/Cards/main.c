@@ -10,9 +10,11 @@
 #define Surrendering 1
 #define Doubling 1
 #define DoubleAfterSplit 1
+#define DeckNumber 1
 
 struct Cardstruct
 {
+    int deck[52];
     int TrueCount;
     enum Options
     {
@@ -34,7 +36,7 @@ struct Cardstruct
         NINE,
         TEN,
         ACE
-    } Card[3];
+    } Card[52];
 };
 
 int generateCards(struct Cardstruct *Cards);
@@ -60,14 +62,50 @@ int main(void)
 int generateCards(struct Cardstruct *Cards)
 {
 
-    srand((unsigned int)time(NULL));
-    Cards->Card[FirstCard] = (rand() % 10) + 2; // Random number 2-11
-    Cards->Card[SecondCard] = (rand() % 10) + 2;
-    Cards->Card[DealerCard] = (rand() % 10) + 2;
-    // Cards->Card[FirstCard] = 6;
-    // Cards->Card[SecondCard] = 9;
-    // Cards->Card[DealerCard] = 9;
+    // srand((unsigned int)time(NULL));
+    //  Cards->Card[FirstCard] = (rand() % 10) + 2; // Random number 2-11
+    //  Cards->Card[SecondCard] = (rand() % 10) + 2;
+    //  Cards->Card[DealerCard] = (rand() % 10) + 2;
+    //  Cards->Card[FirstCard] = 6;
+    //  Cards->Card[SecondCard] = 9;
+    //  Cards->Card[DealerCard] = 9;
 
+    int temp, Value1, Value2, suit, cardNumber;
+    int i;
+    for (i = 0; i < 52 * DeckNumber; i++)
+    {
+        Cards->deck[i] = i;
+    }
+    // shuffle deck
+    for (i = 0; i < 1000; i++)
+    {
+        srand((unsigned int)time(NULL));
+        Value1 = (rand() % 52);
+        Value2 = (rand() % 52);
+        // swap cards
+        temp = Cards->deck[Value1];
+        Cards->deck[Value1] = Cards->deck[Value2];
+        Cards->deck[Value2] = temp;
+    }
+    for (i = 0; i < 52 * DeckNumber; i++)
+    {
+        suit = Cards->deck[i] % 4;
+        cardNumber = (Cards->deck[i] % 13) + 1;
+        if (cardNumber >= 10)
+        {
+            Cards->Card[i] = TEN;
+        }
+        else if (cardNumber == 1)
+        {
+            Cards->Card[i] = ACE;
+        }
+        else
+        {
+            Cards->Card[i] = cardNumber;
+        }
+        printf("%d ", Cards->Card[i]);
+    }
+    printf("\n");
     return (EXIT_SUCCESS);
 }
 
@@ -491,6 +529,11 @@ int calculateSplitTable(struct Cardstruct *Cards)
 int printData(struct Cardstruct *Cards)
 {
     int i;
+    // for (i = 0; i < 52; i++)
+    // {
+    //     printf("suit=%d number=%d ", Cards->suit, Cards->number);
+    // }
+    // printf("\n");
     for (i = 0; i <= DealerCard; i++)
     {
         switch (i)
