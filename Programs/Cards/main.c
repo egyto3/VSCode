@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
 
 #define Deviations 1
 #define Surrendering 1
@@ -13,10 +14,11 @@
 struct Cardstruct
 {
     int FirstCard, SecondCard, DealerCard;
-    int *deck;
+    int deck[52];
     int CardsDrawn;
     int arrayPostitionSwitchtoDealer;
     int CardSum;
+    int NumberofGuesses, Score;
     int DealerCardSum;
     int Count;
     int TrueCount;
@@ -42,8 +44,7 @@ struct Cardstruct
         NINE,
         TEN,
         ACE
-    } *
-        Card;
+    } Card[52];
 };
 
 int generateCards(struct Cardstruct *Cards);
@@ -54,6 +55,7 @@ int calculateSplitTable(struct Cardstruct *Cards);
 int printData(struct Cardstruct *Cards);
 int compareUserChoice(struct Cardstruct *Cards);
 int calculateCount(struct Cardstruct *Cards);
+int updateStatsFile(struct Cardstruct *Cards);
 
 int main(void)
 {
@@ -85,8 +87,8 @@ int main(void)
     }
     printf("End of shoe");
 
-    free(Cards.Card);
-    free(Cards.deck);
+    // free(Cards.Card);
+    // free(Cards.deck);
     return (EXIT_SUCCESS);
 }
 
@@ -96,19 +98,19 @@ int generateCards(struct Cardstruct *Cards)
     int temp, Value1, Value2, cardNumber;
     // int suit;
 
-    Cards->deck = malloc(sizeof(Cards->deck) * DeckNumber);
-    if (Cards->deck == NULL)
-    {
-        printf("Failed to allocate space for deck\n");
-        exit(EXIT_FAILURE);
-    }
+    // Cards->deck = malloc(sizeof(Cards->deck) * DeckNumber);
+    // if (Cards->deck == NULL)
+    // {
+    //     printf("Failed to allocate space for deck\n");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    Cards->Card = malloc(sizeof(Cards->Card) * DeckNumber);
-    if (Cards->deck == NULL)
-    {
-        printf("Failed to allocate space for card\n");
-        exit(EXIT_FAILURE);
-    }
+    // Cards->Card = malloc(sizeof(Cards->Card) * DeckNumber);
+    // if (Cards->deck == NULL)
+    // {
+    //     printf("Failed to allocate space for card\n");
+    //     exit(EXIT_FAILURE);
+    // }
 
     int i;
     for (i = 0; i < 52 * DeckNumber; i++)
@@ -649,10 +651,11 @@ int compareUserChoice(struct Cardstruct *Cards)
     int UserCountGuess = 0;
     int UserTrueCountGuess = 0;
     char ComputedResult[10];
-    int score = 0;
     int i;
     char *end;
     Cards->arrayPostitionSwitchtoDealer = 0;
+    Cards->Score = 0;
+    Cards->NumberofGuesses = 0;
 
     calculateDecision(Cards);
     calculateCount(Cards);
@@ -772,16 +775,18 @@ int compareUserChoice(struct Cardstruct *Cards)
             break;
         }
 
+        Cards->NumberofGuesses++;
         if (!strcmp(UserDecisionGuess, ComputedResult))
         {
-            score += 1;
+            Cards->Score += 1;
             printf("Correct! ");
         }
         else
         {
             printf("Incorrect! ");
         }
-        printf("You should: %s\nScore = %d\n", ComputedResult, score);
+        printf("You should: %s\n", ComputedResult);
+        updateStatsFile(Cards);
 
         if (!strcmp(UserDecisionGuess, "Stand"))
         {
@@ -794,7 +799,7 @@ int compareUserChoice(struct Cardstruct *Cards)
                 if (Cards->CardsDrawn >= (52 * DeckNumber))
                 {
                     printf("Can't draw more cards (deck is empty)");
-                    return(EXIT_FAILURE);
+                    return (EXIT_FAILURE);
                 }
                 Cards->CardsDrawn += 1;
                 Cards->DealerCardSum += (int)Cards->Card[Cards->CardsDrawn - 1];
@@ -831,19 +836,20 @@ int compareUserChoice(struct Cardstruct *Cards)
             {
                 printf("You scored lower than the dealer %d<%d. You lose!\n", Cards->CardSum, Cards->DealerCardSum);
             }
-            return (EXIT_SUCCESS);
         }
         else
         {
             if (Cards->CardsDrawn >= (52 * DeckNumber))
             {
                 printf("Can't draw more cards (deck is empty)");
-                return(EXIT_FAILURE);
+                return (EXIT_FAILURE);
             }
             Cards->CardsDrawn += 1;
             compareUserChoice(Cards);
         }
     }
+    printf("Score = %.2f%%", ((float)Cards->Score / (float)Cards->NumberofGuesses) * 100);
+
     return (EXIT_SUCCESS);
 }
 
@@ -867,6 +873,42 @@ int calculateCount(struct Cardstruct *Cards)
         }
     }
     Cards->TrueCount = Cards->Count / DeckNumber;
+
+    return (EXIT_SUCCESS);
+}
+
+int updateStatsFile(struct Cardstruct *Cards)
+{
+    int tempNumberofGuesses = 0;
+    int tempScore = 0;
+    FILE *Statsfptr;
+
+    if (access("Stats.txt", F_OK) == 0)
+    {
+        Statsfptr = fopen("C:\\Users\\Tom\\VSCode\\Programs\\Cards\\Stats.txt", "r+");
+    }
+    else
+    {
+        Statsfptr = fopen("C:\\Users\\Tom\\VSCode\\Programs\\Cards\\Stats.txt", "w+");
+    }
+
+    if (Statsfptr == NULL)
+    {
+        printf("Error opening file!");
+        exit(EXIT_FAILURE);
+    }
+
+    fscanf(Statsfptr, "%*s %d", &tempScore);
+    fscanf(Statsfptr, "%*s %d", &tempNumberofGuesses);
+    Cards->Score += tempScore;
+    Cards->NumberofGuesses += tempNumberofGuesses;
+    fclose(Statsfptr);
+    Statsfptr = fopen("C:\\Users\\Tom\\VSCode\\Programs\\Cards\\Stats.txt", "w+");
+    fprintf(Statsfptr, "%s %d %s", "Score", Cards->Score, "\n");
+    fprintf(Statsfptr, "%s %d", "Total_Guesses", Cards->NumberofGuesses);
+    fseek(Statsfptr, 0, SEEK_SET);
+
+    fclose(Statsfptr);
 
     return (EXIT_SUCCESS);
 }
