@@ -1,2 +1,3 @@
-Score 3 
-Total_Guesses 5
+Score 22 
+Total_Guesses 30 
+Money -890764384

@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Tom/VSCode/Programs/Cards",
-      "program": "c:/Users/Tom/VSCode/Programs/Cards/build/Debug/outDebug",
+      "cwd": "c:/Users/Tom/VSCode/Programs/Exam_Practice/extra/q6",
+      "program": "c:/Users/Tom/VSCode/Programs/Exam_Practice/extra/q6/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
